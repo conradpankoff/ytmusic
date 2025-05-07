@@ -1,0 +1,11 @@
+{{define "content"}}
+
+<h1>Channel: <a href="/channel/{{.Channel.ChannelExternalID}}">{{.Channel.ChannelTitle}}</a></h1>
+
+{{template "shared_player" .Videos}}
+
+{{end}}
+
+{{define "page_channel_audio"}}
+{{template "layout" .}}
+{{end}}

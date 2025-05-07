@@ -1,0 +1,32 @@
+{{define "content"}}
+
+<h1>Playlist: {{.Playlist.PlaylistTitle}}</h1>
+
+{{template "dynamic_dl" .Playlist}}
+
+<p>
+  <a href="https://www.youtube.com/playlist?list={{.Playlist.PlaylistExternalID}}">
+    https://www.youtube.com/playlist?list={{.Playlist.PlaylistExternalID}}
+  </a>
+</p>
+
+<h2>Channel: {{first_of .Channel.ChannelTitle "No title yet"}}</h2>
+
+{{if .Channel.ChannelID}}
+  <div class="card-list">
+    {{template "shared_channel_card" .Channel}}
+  </div>
+{{end}}
+
+{{if .Videos}}
+<h2>Videos</h2>
+<p><a href="/playlists/{{.Playlist.PlaylistExternalID}}/audio">Play Audio</a></p>
+<p><a href="/playlists/{{.Playlist.PlaylistExternalID}}/audio-zip">Download Audio (zip)</a></p>
+{{template "shared_video_cards" .Videos}}
+{{end}}
+
+{{end}}
+
+{{define "page_playlist"}}
+{{template "layout" .}}
+{{end}}

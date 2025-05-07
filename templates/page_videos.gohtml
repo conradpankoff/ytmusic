@@ -1,0 +1,12 @@
+{{define "content"}}
+
+<h1>Videos</h1>
+<p><a href="/videos/audio?q={{.Q}}">Play Audio</a></p>
+<p><a href="/videos/audio-zip?q={{.Q}}">Download Audio (zip)</a></p>
+{{template "shared_video_cards" .Videos}}
+
+{{end}}
+
+{{define "page_videos"}}
+{{template "layout" .}}
+{{end}}

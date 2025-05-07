@@ -1,0 +1,95 @@
+# fknsrs.biz/p/reflectutil v0.0.3
+## explicit; go 1.20
+fknsrs.biz/p/reflectutil
+# fknsrs.biz/p/sorm v1.5.0
+## explicit; go 1.13
+fknsrs.biz/p/sorm
+fknsrs.biz/p/sorm/qsorm
+# fknsrs.biz/p/sqlbuilder v1.0.1
+## explicit; go 1.13
+fknsrs.biz/p/sqlbuilder
+# github.com/Jeffail/gabs/v2 v2.7.0
+## explicit; go 1.16
+github.com/Jeffail/gabs/v2
+# github.com/PuerkitoBio/goquery v1.8.1
+## explicit; go 1.13
+github.com/PuerkitoBio/goquery
+# github.com/andybalholm/cascadia v1.3.2
+## explicit; go 1.16
+github.com/andybalholm/cascadia
+# github.com/bxcodec/httpcache v1.0.0-beta.3
+## explicit; go 1.13
+github.com/bxcodec/httpcache/cache
+# github.com/davecgh/go-spew v1.1.1
+## explicit
+github.com/davecgh/go-spew/spew
+# github.com/fsnotify/fsnotify v1.6.0
+## explicit; go 1.16
+# github.com/gorilla/mux v1.8.0
+## explicit; go 1.12
+github.com/gorilla/mux
+# github.com/gost/godata v0.0.0-20200707132251-5d9cf5efac7d
+## explicit
+github.com/gost/godata
+# github.com/kr/pretty v0.3.0
+## explicit; go 1.12
+# github.com/mattn/go-sqlite3 v1.14.17
+## explicit; go 1.16
+github.com/mattn/go-sqlite3
+# github.com/monoculum/formam v3.5.5+incompatible
+## explicit
+github.com/monoculum/formam
+# github.com/pelletier/go-toml v1.9.5
+## explicit; go 1.12
+github.com/pelletier/go-toml
+# github.com/pmezard/go-difflib v1.0.0
+## explicit
+github.com/pmezard/go-difflib/difflib
+# github.com/serenize/snaker v0.0.0-20201027110005-a7ad2135616e
+## explicit
+github.com/serenize/snaker
+# github.com/shogo82148/go-sql-proxy v0.6.1
+## explicit; go 1.17
+github.com/shogo82148/go-sql-proxy
+# github.com/sirupsen/logrus v1.9.3
+## explicit; go 1.13
+github.com/sirupsen/logrus
+# github.com/stretchr/testify v1.8.2
+## explicit; go 1.13
+github.com/stretchr/testify/assert
+# github.com/tdewolff/minify v2.3.6+incompatible
+## explicit
+github.com/tdewolff/minify
+github.com/tdewolff/minify/css
+github.com/tdewolff/minify/html
+github.com/tdewolff/minify/js
+# github.com/tdewolff/parse v2.3.4+incompatible
+## explicit
+github.com/tdewolff/parse
+github.com/tdewolff/parse/buffer
+github.com/tdewolff/parse/css
+github.com/tdewolff/parse/html
+github.com/tdewolff/parse/js
+github.com/tdewolff/parse/strconv
+# github.com/tdewolff/test v1.0.7
+## explicit; go 1.12
+# github.com/urfave/negroni/v2 v2.0.2
+## explicit
+github.com/urfave/negroni/v2
+# go.etcd.io/bbolt v1.3.7
+## explicit; go 1.17
+go.etcd.io/bbolt
+# golang.org/x/net v0.12.0
+## explicit; go 1.17
+golang.org/x/net/html
+golang.org/x/net/html/atom
+# golang.org/x/sys v0.10.0
+## explicit; go 1.17
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127
+## explicit
+# gopkg.in/yaml.v3 v3.0.1
+## explicit
+gopkg.in/yaml.v3

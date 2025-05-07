@@ -1,0 +1,29 @@
+{{define "content"}}
+
+<h1>Channel: {{.Channel.ChannelTitle}}</h1>
+
+{{template "dynamic_dl" .Channel}}
+
+<p>
+  <a href="https://www.youtube.com/channel/{{.Channel.ChannelExternalID}}">
+    https://www.youtube.com/channel/{{.Channel.ChannelExternalID}}
+  </a>
+</p>
+
+{{if .Playlists}}
+<h2>Playlists</h2>
+{{template "shared_playlist_cards" .Playlists}}
+{{end}}
+
+{{if .Videos}}
+<h2>Videos</h2>
+<p><a href="/channels/{{.Channel.ChannelExternalID}}/audio">Play Audio</a></p>
+<p><a href="/channels/{{.Channel.ChannelExternalID}}/audio-zip">Download Audio (zip)</a></p>
+{{template "shared_video_cards" .Videos}}
+{{end}}
+
+{{end}}
+
+{{define "page_channel"}}
+{{template "layout" .}}
+{{end}}

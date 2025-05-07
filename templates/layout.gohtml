@@ -1,0 +1,163 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+
+  <body>
+    <header id="nav">
+      <a href="/" id="nav-title"><strong>Music</strong></a>
+      <span>|</span>
+      <a href="/channels">Channels</a>
+      <a href="/playlists">Playlists</a>
+      <a href="/videos">Videos</a>
+      <a href="/add">Add</a>
+      <a href="/jobs">Jobs</a>
+      <span>|</span>
+      <form id="nav-search" action="/" method="get">
+        <input name="q" placeholder="Search" {{if .Q}}value="{{.Q}}"{{end}}>
+      </form>
+    </header>
+
+    <div class="content">
+      {{if .Messages.Error}}<div class="message error">{{.Messages.Error}}</div>{{end}}
+      {{if .Messages.Success}}<div class="message success">{{.Messages.Success}}</div>{{end}}
+      {{if .Messages.Information}}<div class="message information">{{.Messages.Information}}</div>{{end}}
+
+      {{template "content" .}}
+    </div>
+
+    <script type="text/hyperscript" src=/static/shared.hs></script>
+    <script src=/static/htmx_v1.9.2.js></script>
+    <script src=/static/hyperscript_v0.9.8.js></script>
+    <script>
+      function syncFunction() {
+        return true
+      }
+
+      function asyncFunction() {
+        return new Promise(function(resolve, reject) {
+          setTimeout(resolve, 5)
+        })
+      }
+    </script>
+  </body>
+</html>
+{{end}}
+
+{{define "dynamic_dl"}}
+{{$v := .}}
+<dl>
+  {{range $pair := (field_name_value_pairs $v)}}
+    <dt>{{$pair.Name | pascal_to_title}}</dt>
+    <dd>{{$pair.Value | format_appropriately $v}}</dd>
+  {{end}}
+</dl>
+{{end}}
+
+{{define "dynamic_table_read_only"}}
+<table>
+  <thead>
+    <tr>
+      {{range $name := (field_names .)}}
+        <th>{{$name | pascal_to_title}}</th>
+      {{end}}
+    </tr>
+  </thead>
+
+  <tbody>
+    {{range $e := .}}
+      <tr>
+        {{range $pair := (field_name_value_pairs $e)}}
+          <td>{{$pair.Value | format_appropriately $e}}</td>
+        {{end}}
+      </tr>
+    {{end}}
+  </tbody>
+</table>
+{{end}}
+
+{{define "dynamic_table"}}
+<table>
+  <thead>
+    <tr>
+      {{range $name := (field_names .)}}
+        <th>{{$name | pascal_to_title}}</th>
+      {{end}}
+    </tr>
+  </thead>
+
+  <tbody>
+    {{range $e := .}}
+      <tr>
+        {{range $pair := (field_name_value_pairs $e)}}
+          <td>{{$pair.Value | format_appropriately $e}}</td>
+        {{end}}
+      </tr>
+    {{end}}
+  </tbody>
+</table>
+{{end}}
+
+{{define "dynamic_action_table"}}
+{{$Args := .}}
+<form action="{{$Args.Action}}" method="post">
+  <table>
+    <thead>
+      <tr>
+        {{range $name := (field_names  $Args.Rows)}}
+          <th>{{$name | pascal_to_title}}</th>
+        {{end}}
+
+        {{range $action :=  $Args.Actions}}
+          <th>{{$action | pascal_to_title}}</th>
+        {{end}}
+      </tr>
+    </thead>
+
+    <tbody>
+      {{range $e :=  $Args.Rows}}
+        <tr>
+          {{range $pair := (field_name_value_pairs $e)}}
+            <td>{{$pair.Value | format_appropriately $e}}</td>
+          {{end}}
+
+          {{range $action :=  $Args.Actions}}
+            <td>
+              <input
+                type="checkbox"
+                class="action action_{{$action | pascal_to_snake}}"
+                name="{{($action | pascal_to_snake)}}[]"
+                value="{{$e.ID}}"
+              />
+            </td>
+          {{end}}
+        </tr>
+      {{end}}
+    </tbody>
+
+    <tfoot>
+      <tr>
+        <th colspan={{(slice_length (field_names $Args.Rows))}}>
+          <button type="submit">Submit</button>
+        </th>
+
+        {{range $action :=  $Args.Actions}}
+          <th>
+            <button _="on click put 'checked' into .action_{{$action | pascal_to_snake}}.checked then halt the event">
+              all
+            </button>
+            <button _="on click put '' into .action_{{$action | pascal_to_snake}}.checked then halt the event">
+              none
+            </button>
+          </th>
+        {{end}}
+      </tr>
+    </tfoot>
+  </table>
+</form>
+{{end}}

@@ -1,0 +1,24 @@
+{{define "content"}}
+
+{{if .Channels}}
+<h1>Channels</h1>
+{{template "shared_channel_cards" .Channels}}
+{{end}}
+
+{{if .Playlists}}
+<h1>Playlists</h1>
+{{template "shared_playlist_cards" .Playlists}}
+{{end}}
+
+{{if .Videos}}
+<h1>Videos</h1>
+<p><a href="/videos/audio?q={{.Q}}">Play Audio</a></p>
+<p><a href="/videos/audio-zip?q={{.Q}}">Download Audio (zip)</a></p>
+{{template "shared_video_cards" .Videos}}
+{{end}}
+
+{{end}}
+
+{{define "page_index"}}
+{{template "layout" .}}
+{{end}}

@@ -1,0 +1,187 @@
+package stringutil
+
+import (
+	"bytes"
+	"sort"
+	"strings"
+	"unicode"
+)
+
+func PluralGeneric(input string) string {
+	if len(input) == 0 {
+		return ""
+	}
+
+	switch unicode.ToLower(input[len(input)-1]) {
+	case 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 't', 'u', 'w':
+		return input + "s"
+	case 'i', 's', 'v', 'x', 'z':
+		return input + "es"
+	case 'h':
+		if len(input) >= 2 {
+			switch unicode.ToLower(input[len(input)-2]) {
+			case 'c', 's':
+				return input + "es"
+			}
+		}
+
+		return input + "s"
+	case 'y':
+		if len(input) >= 2 {
+			switch unicode.ToLower(input[len(input)-2]) {
+			case 'a', 'e', 'i', 'o', 'u':
+				return input + "es"
+			}
+		}
+
+		return input[:len(input)-1] + "ies"
+	default:
+		return input + "s"
+	}
+}
+
+func compareWords(a, b string) int {
+	if a == b {
+		return 0
+	}
+
+	if strings.EqualFold(a, b) {
+		return 0
+	}
+
+	return strings.Compare(strings.ToLower(a), strings.ToLower(b))
+}
+
+type textCase int
+
+const (
+	textCaseUnknown = textCase(iota)
+	textCaseLower
+	textCaseUpper
+	textCaseMixed
+)
+
+func detectCase(s string) textCase {
+	c := textCaseUnknown
+
+	for _, r := range s {
+		switch {
+		case unicode.IsUpper(r):
+			switch c {
+			case textCaseUnknown:
+				c = textCaseUpper
+			case textCaseLower:
+				return textCaseMixed
+			case textCaseUpper:
+				// nothing
+			}
+		case unicode.IsLower(r):
+			switch c {
+			case textCaseUnknown:
+				c = textCaseLower
+			case textCaseLower:
+				// nothing
+			case textCaseUpper:
+				return textCaseMixed
+			}
+		}
+	}
+
+	return c
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+
+	return b
+}
+
+func convertCase(targetCase, sourceData string) string {
+	if strings.EqualFold(targetCase, sourceData) {
+		return targetCase
+	}
+
+	switch detectCase(targetCase) {
+	case textCaseUnknown:
+		return sourceData
+	case textCaseUpper:
+		return strings.ToUpper(sourceData)
+	case textCaseLower:
+		return strings.ToLower(sourceData)
+	case textCaseMixed:
+		targetCaseRunes := bytes.Runes([]byte(targetCase))
+		sourceDataRunes := bytes.Runes([]byte(sourceData))
+
+		for i, l := 0, min(len(targetCaseRunes), len(sourceDataRunes)); i < l; i++ {
+			switch {
+			case unicode.IsUpper(targetCaseRunes[i]) && !unicode.IsUpper(sourceDataRunes[i]):
+				sourceDataRunes[i] = unicode.ToUpper(sourceDataRunes[i])
+			case unicode.IsLower(targetCaseRunes[i]) && !unicode.IsLower(sourceDataRunes[i]):
+				sourceDataRunes[i] = unicode.ToLower(sourceDataRunes[i])
+			}
+		}
+
+		return string(sourceDataRunes)
+	default:
+		return "???"
+	}
+}
+
+type PluraliserOverride struct {
+	Simple, Acronym  bool
+	Singular, Plural string
+}
+
+type Pluraliser struct {
+	overrides []pluraliserOverride
+}
+
+func (p *Pluraliser) addOverride(override pluraliserOverride) {
+	p.overrides = append(p.overrides, override)
+
+	sort.Slice(p.overrides, func(i, j int) bool {
+		return p.overrides[i].Singular < p.overrides[j].Singular
+	})
+}
+
+func (p *Pluraliser) AddSimpleOverride(word string) {
+	p.addOverride(pluraliserOverride{Simple: true, Singular: word})
+}
+
+func (p *Pluraliser) AddAcronymOverride(word string) {
+	p.addOverride(pluraliserOverride{Acronym: true, Singular: word})
+}
+
+func (p *Pluraliser) Plural(input string) string {
+	if len(input) == 0 {
+		return ""
+	}
+
+	if index := sort.Search(
+		len(p.overrides),
+		func(i int) bool {
+			return compareWords(p.overrides[i].singular, input) >= 0
+		},
+	); index < len(p.overrides) && strings.EqualFold(p.overrides[index].singular, input) {
+		if p.overrides[index].simple {
+			return input
+		}
+
+		return convertCase(input, p.overrides[index].plural)
+	}
+
+	return convertCase(input, PluralGeneric(input))
+}
+
+var DefaultPluraliser = Pluraliser{
+	overrides: []pluraliserOverride{
+		{true, "fish", ""},
+		{true, "sheep", ""},
+	},
+}
+
+func Plural(input string) string {
+	return DefaultPluraliser.Plural(input)
+}

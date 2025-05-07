@@ -1,0 +1,25 @@
+{{define "shared_video_card"}}
+<a class="card video_{{.VideoID}}" href="/videos/{{.VideoExternalID}}">
+  {{if .VideoThumbnailUpdatedAt}}
+    <img src="/data/thumbnails/{{.VideoExternalID}}.jpg">
+  {{else}}
+    <img src="/static/clock-small.png">
+  {{end}}
+
+  <div><strong>{{first_of .VideoTitle "No title yet"}}</strong></div>
+
+  <div class="small">{{first_of .ChannelTitle "No channel title yet"}}</div>
+
+  <div class="small">Added: {{.VideoCreatedAt | format_date_null}}</div>
+
+  <div class="small">Downloaded: {{.VideoDownloadedAt | format_date_null}}</div>
+</a>
+{{end}}
+
+{{define "shared_video_cards"}}
+<div class="card-list">
+  {{range .}}
+    {{template "shared_video_card" .}}
+  {{end}}
+</div>
+{{end}}

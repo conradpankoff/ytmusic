@@ -1,0 +1,28 @@
+{{define "shared_player"}}
+<div class="player" _="install Player">
+  <p><audio class="audio" controls></p>
+
+  <p class="title"></p>
+
+  <p class="controls">
+    <button class="play">Play</button>
+    <button class="pause">Pause</button>
+    |
+    <button class="back">Back</button>
+    <button class="next">Next</button>
+    |
+    <button class="shuffle">Shuffle</button>
+  </p>
+
+  <ol class="items">
+    {{range $Video := .}}
+      <li
+        data-id="{{$Video.VideoExternalID}}"
+        class="item {{if $Video.VideoAudioExtractedAt}}ready{{else}}not-ready{{end}}"
+      >
+        {{$Video.VideoTitle}} <small>({{(first_of $Video.ChannelTitle "no channel title yet")}})</small>
+      </li>
+    {{end}}
+  </ol>
+</div>
+{{end}}

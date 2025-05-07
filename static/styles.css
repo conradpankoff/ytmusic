@@ -1,0 +1,182 @@
+html,
+body {
+  margin: 19px 0 0 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+form fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+form fieldset > div {
+  display: flex;
+  gap: 8px;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+}
+
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+td {
+  border: 1px solid #ccc;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  border-bottom: 1px dashed lightgray;
+}
+
+#nav {
+  background: #fff;
+  border-bottom: 1px solid lightgray;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  padding: 10px;
+}
+
+#nav > * {
+  margin-right: 4px;
+}
+
+#nav a {
+  color: inherit;
+}
+
+#nav-title {
+  text-decoration: none;
+}
+
+#nav-search {
+  display: inline-block;
+}
+
+.message {
+  border-radius: 4px;
+  padding: 1em;
+  margin-bottom: 1em;
+}
+
+.message.error {
+  border: 2px solid #ff4d4f;
+  background-color: #fff1f0;
+  color: #ff4d4f;
+}
+
+.message.success {
+  border: 2px solid #52c41a;
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+.message.information {
+  border: 2px solid #1890ff;
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.content {
+  padding: 20px;
+}
+
+.content > h1:first-child,
+.content > h2:first-child,
+.content > h3:first-child {
+  margin-top: 0;
+}
+
+.header-with-form {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-with-form > form {
+  display: inline-flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+
+.card {
+  border-radius: 5px;
+  padding: 8px;
+  color: inherit;
+}
+
+a.card {
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+a.card:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.card > * {
+  margin-top: 8px;
+}
+.card > *:first-child {
+  margin-top: 0;
+}
+
+.card > img:first-child {
+  display: block;
+  height: 120px;
+  border-radius: 5px;
+  margin: auto;
+}
+
+.small {
+  font-size: 80%;
+}
+
+.card-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  grid-gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  list-style: none;
+}
+
+video {
+  max-width: 100%;
+}
+
+.player ol {
+}
+
+.player ol li {
+  cursor: pointer;
+}
+
+.player ol li.not-ready {
+  cursor: not-allowed;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.player ol li:hover {
+  background: #eee;
+}
+
+.player ol li.current {
+  font-weight: bold;
+}
+
+.player ol li.current::before {
+  content: '> ';
+}

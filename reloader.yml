@@ -1,0 +1,21 @@
+ignore:
+  - .git
+  - .git/**
+watchers:
+  - name: go build
+    debounce: 5s
+    command: go build --tags fts5 -v -o ytmusic
+    include:
+      - '*.go'
+      - '**/*.go'
+      # - migrations/*.sql
+      # these files will be reloaded live from the filesystem in development
+      # - templates/*
+      # - static/*
+  - name: server
+    command: ./ytmusic
+    hold_until_change: true
+    include:
+      - ytmusic
+      - config.toml
+      - config.yaml

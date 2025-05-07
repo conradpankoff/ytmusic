@@ -1,0 +1,52 @@
+{{define "content"}}
+
+<h1>Video: {{.Video.VideoTitle}}</h1>
+
+{{template "dynamic_dl" .Video}}
+
+{{if .Video.VideoDownloadedAt}}
+  <video class="video" controls _="install Video">
+    <source src="/data/videos/{{.Video.VideoExternalID}}.mp4" type="video/mp4">
+  </video>
+
+  <p>
+    <a href="/data/videos/{{.Video.VideoExternalID}}.mp4" download>Download video.</a>
+  </p>
+{{else}}
+  <p>Video has not been downloaded yet.</p>
+{{end}}
+
+{{if .Video.VideoAudioExtractedAt}}
+  <audio class="audio" controls _="install Audio">
+    <source src="/data/audio/{{.Video.VideoExternalID}}.mp3" type="audio/mp3">
+  </audio>
+
+  <p>
+    <a href="/data/audio/{{.Video.VideoExternalID}}.mp3" download>Download audio.</a>
+  </p>
+{{else}}
+  <p>Audio has not been extracted yet.</p>
+{{end}}
+
+<p>
+  <a href="https://youtube.com/watch?v={{.Video.VideoExternalID}}">
+    https://youtube.com/watch?v={{.Video.VideoExternalID}}
+  </a>
+</p>
+
+<h2>Channel: {{first_of .Channel.ChannelTitle "No title yet"}}</h2>
+
+{{if .Channel.ChannelID}}
+  <div class="card-list">
+    {{template "shared_channel_card" .Channel}}
+  </div>
+{{end}}
+
+<h2>Playlists</h2>
+{{template "shared_playlist_cards" .VideoInPlaylists}}
+
+{{end}}
+
+{{define "page_video"}}
+{{template "layout" .}}
+{{end}}

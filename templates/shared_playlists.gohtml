@@ -1,0 +1,23 @@
+{{define "shared_playlist_card"}}
+<a class="card playlist_{{.PlaylistID}}" href="/playlists/{{.PlaylistExternalID}}">
+  {{if .PlaylistThumbnailUpdatedAt}}
+    <img src="/data/thumbnails/{{.PlaylistExternalID}}.jpg">
+  {{else}}
+    <img src="/static/clock-small.png">
+  {{end}}
+
+  <div><strong>{{first_of .PlaylistTitle "No title yet"}}</strong></div>
+
+  <div class="small">{{first_of .ChannelTitle "No channel title yet"}}</div>
+
+  <div class="small">Added: {{.PlaylistCreatedAt | format_date_null}}</div>
+</a>
+{{end}}
+
+{{define "shared_playlist_cards"}}
+<div class="card-list">
+  {{range .}}
+    {{template "shared_playlist_card" .}}
+  {{end}}
+</div>
+{{end}}

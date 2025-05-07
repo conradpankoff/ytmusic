@@ -1,0 +1,21 @@
+{{define "shared_channel_card"}}
+<a class="card channel_{{.ChannelID}}" href="/channels/{{.ChannelExternalID}}">
+  {{if .ChannelThumbnailUpdatedAt}}
+    <img src="/data/thumbnails/{{.ChannelExternalID}}.jpg">
+  {{else}}
+    <img src="/static/clock-small.png">
+  {{end}}
+
+  <div><strong>{{first_of .ChannelTitle "No title yet"}}</strong></div>
+
+  <div class="small">Added: {{.ChannelCreatedAt | format_date}}</div>
+</a>
+{{end}}
+
+{{define "shared_channel_cards"}}
+<div class="card-list">
+  {{range .}}
+    {{template "shared_channel_card" .}}
+  {{end}}
+</div>
+{{end}}

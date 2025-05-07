@@ -1,0 +1,40 @@
+{{define "content"}}
+
+<h1>Playlist: {{.Playlist.PlaylistTitle}}</h1>
+
+<h2>Channel: {{first_of .Channel.ChannelTitle "No title yet"}}</h2>
+
+{{if .Video}}
+  <h2>Video: {{.Video.VideoTitle}}</h2>
+
+  {{if .Video.VideoDownloadedAt}}
+    <video class="video" controls _="
+      install Video
+      install VideoInPlaylist
+      init wait 500 ms then call my play()
+    ">
+      <source src="/data/videos/{{.Video.VideoExternalID}}.mp4" type="video/mp4">
+    </video>
+
+    <p>
+      <a href="/data/videos/{{.Video.VideoExternalID}}.mp4" download>Download video.</a>
+    </p>
+  {{else}}
+    <p _="init if #play-next exists wait 500 ms then call #play-next's click() end">Video has not been downloaded yet.</p>
+  {{end}}
+{{end}}
+
+{{if .NextVideo}}
+  <p>
+    <a id="play-next" href="/playlists/{{.Playlist.PlaylistExternalID}}/{{.NextVideo.PlaylistVideoPosition}}">Play Next</a>
+  </p>
+{{end}}
+
+<h2>Videos</h2>
+{{template "shared_video_cards" .Videos}}
+
+{{end}}
+
+{{define "page_playlist_video"}}
+{{template "layout" .}}
+{{end}}

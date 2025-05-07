@@ -1,0 +1,11 @@
+{{define "content"}}
+
+<h1>Playlist: <a href="/playlist/{{.Playlist.PlaylistExternalID}}">{{.Playlist.PlaylistTitle}}</a></h1>
+
+{{template "shared_player" .Videos}}
+
+{{end}}
+
+{{define "page_playlist_audio"}}
+{{template "layout" .}}
+{{end}}

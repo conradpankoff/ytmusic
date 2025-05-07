@@ -1,0 +1,21 @@
+{{define "content"}}
+
+<h2 class="header">
+  Add Items
+</h2>
+
+<p>
+  Paste URLs or IDs for channels, playlists, or videos.
+</p>
+
+<form action="/add" method="post">
+  <textarea name="urls_or_ids" placeholder="URLs or IDs" autofocus cols="100" rows="25"></textarea>
+  <br>
+  <button type="submit">Add</button>
+</form>
+
+{{end}}
+
+{{define "page_add"}}
+{{template "layout" .}}
+{{end}}
