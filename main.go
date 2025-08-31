@@ -738,12 +738,12 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 						}
 
 						var video models.Video
-						if err := sorm.FindFirstWhere(ctx, tx, &video, "external_id = ?", videoID); err != nil && err != sql.ErrNoRows {
+						if err := sorm.FindFirstWhere(ctx, tx, &video, "where external_id = ?", videoID); err != nil && err != sql.ErrNoRows {
 							return err
 						}
 
 						var playlistVideo models.PlaylistVideo
-						if err := sorm.FindFirstWhere(ctx, tx, &playlistVideo, "playlist_external_id = ? and video_external_id = ?", playlist.ExternalID, videoID); err != nil {
+						if err := sorm.FindFirstWhere(ctx, tx, &playlistVideo, "where playlist_external_id = ? and video_external_id = ?", playlist.ExternalID, videoID); err != nil {
 							if err != sql.ErrNoRows {
 								return err
 							}
