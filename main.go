@@ -882,8 +882,19 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 			}
 
 			if _, err := os.Stat(cfg.DataFile("videos", externalID+".mp4")); err != nil {
+				// Report progress during download
+				if err := w.UpdateProgress(ctx, j, 10); err != nil {
+					// Log error but don't fail the job
+					ctxlogger.GetLogger(ctx).WithError(err).Warn("failed to update progress")
+				}
+				
 				if err := ytdl.DownloadVideo(ctx, externalID, cfg.DataFile("videos", externalID+".mp4")); err != nil {
 					return "", err
+				}
+				
+				// Mark download as complete
+				if err := w.UpdateProgress(ctx, j, 100); err != nil {
+					ctxlogger.GetLogger(ctx).WithError(err).Warn("failed to update progress")
 				}
 			}
 
@@ -985,12 +996,22 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 			var output string
 
 			if _, err := os.Stat(cfg.DataFile("videos", externalID+"_"+size+".mp4")); err != nil {
+				// Report progress during transcoding
+				if err := w.UpdateProgress(ctx, j, 25); err != nil {
+					ctxlogger.GetLogger(ctx).WithError(err).Warn("failed to update progress")
+				}
+				
 				s, err := ffmpeg.Transcode(ctx, cfg.DataFile("videos", externalID+".mp4"), size+":-2", cfg.DataFile("videos", externalID+"_"+size+".mp4"))
 				if err != nil {
 					return s, err
 				}
 
 				output = s
+				
+				// Mark transcoding as complete
+				if err := w.UpdateProgress(ctx, j, 100); err != nil {
+					ctxlogger.GetLogger(ctx).WithError(err).Warn("failed to update progress")
+				}
 			}
 
 			return output, ctxdb.UsingTx(ctx, nil, func(ctx context.Context, tx *sql.Tx) error {

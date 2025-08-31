@@ -180,3 +180,39 @@ video {
 .player ol li.current::before {
   content: '> ';
 }
+
+/* Progress bar styles */
+.progress-container {
+  width: 100%;
+  background-color: #f2f2f2;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  overflow: hidden;
+  height: 20px;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #52c41a;
+  transition: width 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.job-running {
+  background-color: #fff1f0;
+}
+
+.job-finished {
+  background-color: #f6ffed;
+}
