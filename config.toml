@@ -1,0 +1,8 @@
+log_level = "debug"
+log_queries = "all"
+application_database = "/data/ytmusic/database.db"
+application_cache_path = "/data/ytmusic/cache.db"
+application_data_path = "/data/ytmusic/data"
+application_minify = true
+background_workers = 2
+

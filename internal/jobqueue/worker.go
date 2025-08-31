@@ -32,8 +32,8 @@ type Worker struct {
 	ch chan struct{}
 	m  map[string]WorkerFunction
 	// Progress throttling - tracks last update time per job
-	progressThrottle map[int]time.Time
-	progressMutex    sync.RWMutex
+	pt map[int]time.Time
+	pm sync.RWMutex
 }
 
 func NewWorker(workerFunctions map[string]WorkerFunction) *Worker {
@@ -42,9 +42,9 @@ func NewWorker(workerFunctions map[string]WorkerFunction) *Worker {
 	}
 
 	return &Worker{
-		ch:               make(chan struct{}, 100),
-		m:                workerFunctions,
-		progressThrottle: make(map[int]time.Time),
+		ch: make(chan struct{}, 100),
+		m:  workerFunctions,
+		pt: make(map[int]time.Time),
 	}
 }
 
@@ -182,9 +182,9 @@ func (w *Worker) GetQueueNames() []string {
 func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) error {
 	// Throttle progress updates to reduce database lock frequency
 	// Only update if progress increased by at least 5% or 2 seconds have passed
-	w.progressMutex.RLock()
-	lastUpdate, exists := w.progressThrottle[job.ID]
-	w.progressMutex.RUnlock()
+	w.pm.RLock()
+	lastUpdate, exists := w.pt[job.ID]
+	w.pm.RUnlock()
 	
 	now := time.Now()
 	shouldUpdate := false
@@ -224,9 +224,9 @@ func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) err
 	}
 	
 	// Update throttle tracker
-	w.progressMutex.Lock()
-	w.progressThrottle[job.ID] = now
-	w.progressMutex.Unlock()
+	w.pm.Lock()
+	w.pt[job.ID] = now
+	w.pm.Unlock()
 	
 	return nil
 }
@@ -295,9 +295,9 @@ again:
 	}
 
 	// Clean up progress throttling for finished job
-	w.progressMutex.Lock()
-	delete(w.progressThrottle, job.ID)
-	w.progressMutex.Unlock()
+	w.pm.Lock()
+	delete(w.pt, job.ID)
+	w.pm.Unlock()
 
 	return true, nil
 }
