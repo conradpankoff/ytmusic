@@ -2,7 +2,34 @@
 
 <h1>Jobs</h1>
 
-<table hx-sse="connect:/jobs/updates">
+<table hx-sse="connect:/jobs/updates" 
+       _="on htmx:sseMessage
+          set data to js(JSON.parse) with event.detail.data
+          set jobId to 'job-' + data.id
+          set jobRow to document.getElementById(jobId)
+          if jobRow exists
+            set statusCell to jobRow.querySelector('.job-status')
+            if statusCell exists
+              put js(data.status.charAt(0).toUpperCase() + data.status.slice(1)) into statusCell.textContent
+            end
+            set progressCell to jobRow.querySelector('.job-progress')
+            if progressCell exists and data.progress is not null
+              set queueName to jobRow.cells[1].textContent
+              if queueName is 'video_download' or queueName is 'video_transcode'
+                set progressHTML to '<div class=\"progress-container\"><div class=\"progress-bar\" style=\"width: ' + data.progress + '%;\">' + data.progress + '%</div></div>'
+                put progressHTML into progressCell.innerHTML
+              else
+                put data.progress + '%' into progressCell.textContent
+              end
+            end
+            remove .job-running from jobRow
+            remove .job-finished from jobRow
+            if data.status is 'running'
+              add .job-running to jobRow
+            else if data.status is 'finished'
+              add .job-finished to jobRow
+            end
+          end">
   <thead>
     <tr>
       <th>ID</th>
@@ -67,46 +94,7 @@
   </tbody>
 </table>
 
-<script>
-// Handle SSE job updates
-document.addEventListener('htmx:sseMessage', function(event) {
-    const data = JSON.parse(event.detail.data);
-    const jobRow = document.getElementById('job-' + data.id);
-    
-    if (jobRow) {
-        // Update status
-        const statusCell = jobRow.querySelector('.job-status');
-        if (statusCell) {
-            statusCell.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
-        }
-        
-        // Update progress
-        const progressCell = jobRow.querySelector('.job-progress');
-        if (progressCell && data.progress !== null) {
-            const queueName = jobRow.cells[1].textContent;
-            if (queueName === 'video_download' || queueName === 'video_transcode') {
-                progressCell.innerHTML = `
-                    <div class="progress-container">
-                        <div class="progress-bar" style="width: ${data.progress}%;">
-                            ${data.progress}%
-                        </div>
-                    </div>
-                `;
-            } else {
-                progressCell.textContent = data.progress + '%';
-            }
-        }
-        
-        // Update row class based on status
-        jobRow.className = '';
-        if (data.status === 'running') {
-            jobRow.className = 'job-running';
-        } else if (data.status === 'finished') {
-            jobRow.className = 'job-finished';
-        }
-    }
-});
-</script>
+
 
 {{end}}
 
