@@ -175,6 +175,26 @@ func (w *Worker) GetQueueNames() []string {
 	return queueNames
 }
 
+func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) error {
+	db := ctxdb.GetDB(ctx)
+	
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("jobqueue.Worker.UpdateProgress: could not open transaction: %w", err)
+	}
+	defer tx.Rollback()
+	
+	if err := updateProgress(ctx, tx, job, progress); err != nil {
+		return fmt.Errorf("jobqueue.Worker.UpdateProgress: %w", err)
+	}
+	
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("jobqueue.Worker.UpdateProgress: could not commit transaction: %w", err)
+	}
+	
+	return nil
+}
+
 func (w *Worker) RunOnce(ctx context.Context) (bool, error) {
 	db := ctxdb.GetDB(ctx)
 

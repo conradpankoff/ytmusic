@@ -52,6 +52,7 @@ type Job struct {
 	ReservedAt        *time.Time
 	ReservedUntil     *time.Time
 	FinishedAt        *time.Time
+	Progress          *int // Progress percentage (0-100) for long-running jobs
 	ErrorMessages     sqltypes.JSONStringSlice
 	OutputMessages    sqltypes.JSONStringSlice
 }
@@ -145,6 +146,20 @@ func finish(ctx context.Context, tx *sql.Tx, job *Job, now time.Time, errorMessa
 
 	if err := sorm.SaveRecord(ctx, tx, job); err != nil {
 		return fmt.Errorf("jobqueue.finish: could not save job record: %w", err)
+	}
+
+	return nil
+}
+
+func updateProgress(ctx context.Context, tx *sql.Tx, job *Job, progress int) error {
+	if progress < 0 || progress > 100 {
+		return fmt.Errorf("jobqueue.updateProgress: progress must be between 0 and 100")
+	}
+	
+	job.Progress = &progress
+	
+	if err := sorm.SaveRecord(ctx, tx, job); err != nil {
+		return fmt.Errorf("jobqueue.updateProgress: could not save job record: %w", err)
 	}
 
 	return nil

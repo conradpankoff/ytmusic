@@ -2,7 +2,70 @@
 
 <h1>Jobs</h1>
 
-{{template "dynamic_table" .Jobs}}
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Queue Name</th>
+      <th>Payload</th>
+      <th>Created At</th>
+      <th>Status</th>
+      <th>Progress</th>
+      <th>Reserved At</th>
+      <th>Finished At</th>
+      <th>Attempts Remaining</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{range $job := .Jobs}}
+      <tr class="{{if and $job.ReservedAt (not $job.FinishedAt)}}job-running{{else if $job.FinishedAt}}job-finished{{end}}">
+        <td>{{$job.ID}}</td>
+        <td>{{$job.QueueName}}</td>
+        <td>{{$job.Payload}}</td>
+        <td>{{$job.CreatedAt | format_time}}</td>
+        <td>
+          {{if $job.FinishedAt}}
+            Finished
+          {{else if $job.ReservedAt}}
+            Running
+          {{else}}
+            Pending
+          {{end}}
+        </td>
+        <td>
+          {{if and $job.ReservedAt (not $job.FinishedAt) $job.Progress}}
+            {{if or (eq $job.QueueName "video_download") (eq $job.QueueName "video_transcode")}}
+              <div class="progress-container">
+                <div class="progress-bar" style="width: {{$job.Progress}}%;">
+                  {{$job.Progress}}%
+                </div>
+              </div>
+            {{else}}
+              {{$job.Progress}}%
+            {{end}}
+          {{else if and $job.ReservedAt (not $job.FinishedAt)}}
+            {{if or (eq $job.QueueName "video_download") (eq $job.QueueName "video_transcode")}}
+              <div class="progress-container">
+                <div class="progress-bar" style="width: 0%;">
+                  Starting...
+                </div>
+              </div>
+            {{else}}
+              -
+            {{end}}
+          {{else if $job.FinishedAt}}
+            Complete
+          {{else}}
+            -
+          {{end}}
+        </td>
+        <td>{{$job.ReservedAt | format_time_null}}</td>
+        <td>{{$job.FinishedAt | format_time_null}}</td>
+        <td>{{$job.AttemptsRemaining}}</td>
+      </tr>
+    {{end}}
+  </tbody>
+</table>
 
 {{end}}
 
