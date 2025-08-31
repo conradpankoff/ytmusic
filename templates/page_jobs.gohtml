@@ -2,7 +2,7 @@
 
 <h1>Jobs</h1>
 
-<table>
+<table hx-sse="connect:/jobs/updates">
   <thead>
     <tr>
       <th>ID</th>
@@ -16,14 +16,14 @@
       <th>Attempts Remaining</th>
     </tr>
   </thead>
-  <tbody>
+  <tbody id="jobs-table-body">
     {{range $job := .Jobs}}
-      <tr class="{{if and $job.ReservedAt (not $job.FinishedAt)}}job-running{{else if $job.FinishedAt}}job-finished{{end}}">
+      <tr class="{{if and $job.ReservedAt (not $job.FinishedAt)}}job-running{{else if $job.FinishedAt}}job-finished{{end}}" id="job-{{$job.ID}}">
         <td>{{$job.ID}}</td>
         <td>{{$job.QueueName}}</td>
         <td>{{$job.Payload}}</td>
         <td>{{$job.CreatedAt | format_time}}</td>
-        <td>
+        <td class="job-status">
           {{if $job.FinishedAt}}
             Finished
           {{else if $job.ReservedAt}}
@@ -32,7 +32,7 @@
             Pending
           {{end}}
         </td>
-        <td>
+        <td class="job-progress">
           {{if and $job.ReservedAt (not $job.FinishedAt) $job.Progress}}
             {{if or (eq $job.QueueName "video_download") (eq $job.QueueName "video_transcode")}}
               <div class="progress-container">
@@ -66,6 +66,47 @@
     {{end}}
   </tbody>
 </table>
+
+<script>
+// Handle SSE job updates
+document.addEventListener('htmx:sseMessage', function(event) {
+    const data = JSON.parse(event.detail.data);
+    const jobRow = document.getElementById('job-' + data.id);
+    
+    if (jobRow) {
+        // Update status
+        const statusCell = jobRow.querySelector('.job-status');
+        if (statusCell) {
+            statusCell.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+        }
+        
+        // Update progress
+        const progressCell = jobRow.querySelector('.job-progress');
+        if (progressCell && data.progress !== null) {
+            const queueName = jobRow.cells[1].textContent;
+            if (queueName === 'video_download' || queueName === 'video_transcode') {
+                progressCell.innerHTML = `
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: ${data.progress}%;">
+                            ${data.progress}%
+                        </div>
+                    </div>
+                `;
+            } else {
+                progressCell.textContent = data.progress + '%';
+            }
+        }
+        
+        // Update row class based on status
+        jobRow.className = '';
+        if (data.status === 'running') {
+            jobRow.className = 'job-running';
+        } else if (data.status === 'finished') {
+            jobRow.className = 'job-finished';
+        }
+    }
+});
+</script>
 
 {{end}}
 

@@ -31,6 +31,9 @@ type Worker struct {
 	l  sync.RWMutex
 	ch chan struct{}
 	m  map[string]WorkerFunction
+	// Progress throttling - tracks last update time per job
+	progressThrottle map[int]time.Time
+	progressMutex    sync.RWMutex
 }
 
 func NewWorker(workerFunctions map[string]WorkerFunction) *Worker {
@@ -39,8 +42,9 @@ func NewWorker(workerFunctions map[string]WorkerFunction) *Worker {
 	}
 
 	return &Worker{
-		ch: make(chan struct{}, 100),
-		m:  workerFunctions,
+		ch:               make(chan struct{}, 100),
+		m:                workerFunctions,
+		progressThrottle: make(map[int]time.Time),
 	}
 }
 
@@ -176,6 +180,33 @@ func (w *Worker) GetQueueNames() []string {
 }
 
 func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) error {
+	// Throttle progress updates to reduce database lock frequency
+	// Only update if progress increased by at least 5% or 2 seconds have passed
+	w.progressMutex.RLock()
+	lastUpdate, exists := w.progressThrottle[job.ID]
+	w.progressMutex.RUnlock()
+	
+	now := time.Now()
+	shouldUpdate := false
+	
+	if !exists {
+		shouldUpdate = true
+	} else {
+		// Update if 2 seconds have passed or progress jumped by at least 5%
+		timePassed := now.Sub(lastUpdate) >= 2*time.Second
+		var progressJump bool
+		if job.Progress != nil {
+			progressJump = progress-*job.Progress >= 5
+		} else {
+			progressJump = true
+		}
+		shouldUpdate = timePassed || progressJump || progress == 100 // Always update on completion
+	}
+	
+	if !shouldUpdate {
+		return nil // Skip this update to reduce database load
+	}
+	
 	db := ctxdb.GetDB(ctx)
 	
 	tx, err := db.BeginTx(ctx, nil)
@@ -191,6 +222,11 @@ func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) err
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("jobqueue.Worker.UpdateProgress: could not commit transaction: %w", err)
 	}
+	
+	// Update throttle tracker
+	w.progressMutex.Lock()
+	w.progressThrottle[job.ID] = now
+	w.progressMutex.Unlock()
 	
 	return nil
 }
@@ -257,6 +293,11 @@ again:
 	if err := tx2.Commit(); err != nil {
 		return false, fmt.Errorf("jobqueue.Worker.RunOnce: could not commit transaction to finish: %w", err)
 	}
+
+	// Clean up progress throttling for finished job
+	w.progressMutex.Lock()
+	delete(w.progressThrottle, job.ID)
+	w.progressMutex.Unlock()
 
 	return true, nil
 }
