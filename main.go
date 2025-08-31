@@ -473,6 +473,7 @@ func runApplicationWorker(ctx context.Context, addr string) error {
 	m.Methods(http.MethodGet).Path("/videos/audio-zip").HandlerFunc(handlers.VideosAudioZip)
 	m.Methods(http.MethodGet).Path("/videos/{id}").HandlerFunc(handlers.Video)
 	m.Methods(http.MethodGet).Path("/jobs").HandlerFunc(handlers.Jobs)
+	m.Methods(http.MethodGet).Path("/jobs/updates").HandlerFunc(handlers.JobsSSE)
 
 	if directoryExists("static") {
 		l.Info("using live filesystem for static files")

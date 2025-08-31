@@ -15,6 +15,7 @@ create table jobs (
   reserved_at        timestamp,
   reserved_until     timestamp,
   finished_at        timestamp,
+  progress           integer, -- Progress percentage (0-100) for long-running jobs
   error_messages     text not null,
   output_messages    text not null
 );
@@ -187,17 +188,17 @@ create virtual table playlist_search using fts5(
   content='playlist_search_view', content_rowid='playlist_id',
   channel_id unindexed, channel_created_at unindexed, channel_external_id,
   channel_title,
-  channel_metadata_updated_at unindexed, channel_thumbnail_updated_at unindexed
+  channel_metadata_updated_at unindexed, channel_thumbnail_updated_at unindexed,
   playlist_id unindexed, playlist_created_at unindexed, playlist_external_id,
   playlist_title,
-  playlist_metadata_updated_at unindexed, playlist_thumbnail_updated_at unindexed,
+  playlist_metadata_updated_at unindexed, playlist_thumbnail_updated_at unindexed
 );
 
 create virtual table video_search using fts5(
   content='video_search_view', content_rowid='video_id',
   channel_id unindexed, channel_created_at unindexed, channel_external_id,
   channel_title,
-  channel_metadata_updated_at unindexed, channel_thumbnail_updated_at unindexed
+  channel_metadata_updated_at unindexed, channel_thumbnail_updated_at unindexed,
   video_id unindexed, video_created_at unindexed, video_external_id,
   video_title, video_description,
   video_metadata_updated_at unindexed, video_thumbnail_updated_at unindexed, video_downloaded_at unindexed, video_transcoded_360_at unindexed, video_transcoded_720_at unindexed, video_audio_extracted_at unindexed
