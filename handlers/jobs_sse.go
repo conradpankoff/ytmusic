@@ -14,25 +14,22 @@ import (
 
 // JobUpdate represents a job progress update for SSE
 type JobUpdate struct {
-	ID       int  `json:"id"`
-	Progress *int `json:"progress"`
+	ID       int    `json:"id"`
+	Progress *int   `json:"progress"`
 	Status   string `json:"status"`
 }
 
-// JobsSSE handles Server-Sent Events for real-time job updates
 func JobsSSE(rw http.ResponseWriter, r *http.Request) {
-	// Set SSE headers
 	rw.Header().Set("Content-Type", "text/event-stream")
 	rw.Header().Set("Cache-Control", "no-cache")
 	rw.Header().Set("Connection", "keep-alive")
 	rw.Header().Set("Access-Control-Allow-Origin", "*")
 
 	ctx := r.Context()
-	
-	// Track last seen progress for each job to detect changes
+
 	lastProgress := make(map[int]*int)
-	
-	// Send updates every 2 seconds
+	lastStatus := make(map[int]string)
+
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
@@ -41,13 +38,11 @@ func JobsSSE(rw http.ResponseWriter, r *http.Request) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			// Get current job status
 			var jobs []jobqueue.Job
 			if err := sorm.FindWhere(ctx, ctxdb.GetDB(ctx), &jobs, "where finished_at is null order by id desc limit 100"); err != nil {
-				continue // Skip on error
+				continue
 			}
 
-			// Check for progress changes and send updates
 			for _, job := range jobs {
 				var status string
 				if job.FinishedAt != nil {
@@ -58,25 +53,25 @@ func JobsSSE(rw http.ResponseWriter, r *http.Request) {
 					status = "pending"
 				}
 
-				// Check if this is the first time we see this job OR if progress changed
-				lastProg, exists := lastProgress[job.ID]
-				progressChanged := false
-				
-				if !exists {
-					// First time seeing this job
-					progressChanged = true
-				} else if job.Progress == nil && lastProg != nil {
-					// Progress was removed
-					progressChanged = true
-				} else if job.Progress != nil && lastProg == nil {
-					// Progress was added
-					progressChanged = true
-				} else if job.Progress != nil && lastProg != nil && *job.Progress != *lastProg {
-					// Progress value changed
-					progressChanged = true
+				changed := false
+
+				if v, exists := lastProgress[job.ID]; !exists {
+					changed = true
+				} else if job.Progress == nil && v != nil {
+					changed = true
+				} else if job.Progress != nil && v == nil {
+					changed = true
+				} else if job.Progress != nil && v != nil && *job.Progress != *v {
+					changed = true
 				}
-				
-				if progressChanged {
+
+				if v, exists := lastStatus[job.ID]; !exists {
+					changed = true
+				} else if v != status {
+					changed = true
+				}
+
+				if changed {
 					update := JobUpdate{
 						ID:       job.ID,
 						Progress: job.Progress,
@@ -88,14 +83,13 @@ func JobsSSE(rw http.ResponseWriter, r *http.Request) {
 						continue
 					}
 
-					// Send SSE message
 					fmt.Fprintf(rw, "data: %s\n\n", data)
 					if f, ok := rw.(http.Flusher); ok {
 						f.Flush()
 					}
 
-					// Update tracking
 					lastProgress[job.ID] = job.Progress
+					lastStatus[job.ID] = status
 				}
 			}
 		}
