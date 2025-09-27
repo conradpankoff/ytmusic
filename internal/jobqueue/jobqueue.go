@@ -156,14 +156,14 @@ func updateProgress(ctx context.Context, tx *sql.Tx, job *Job, progress int) err
 	if progress < 0 || progress > 100 {
 		return fmt.Errorf("jobqueue.updateProgress: progress must be between 0 and 100")
 	}
-	
+
 	// Prevent progress from going backwards
 	if job.Progress != nil && progress < *job.Progress {
 		return nil // Silently ignore backwards progress updates
 	}
-	
+
 	job.Progress = &progress
-	
+
 	if err := sorm.SaveRecord(ctx, tx, job); err != nil {
 		return fmt.Errorf("jobqueue.updateProgress: could not save job record: %w", err)
 	}

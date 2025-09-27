@@ -200,7 +200,7 @@ func main() {
 
 	ctx = ctxdb.WithDB(ctx, db)
 
-	cacheDB, err := bbolt.Open(cfg.ApplicationCachePath, 0600, nil)
+	cacheDB, err := bbolt.Open(cfg.ApplicationCachePath, 0o600, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -889,7 +889,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 						ctxlogger.GetLogger(ctx).WithError(err).Warn("failed to update progress")
 					}
 				}
-				
+
 				// Use the new progress-enabled download function
 				if err := ytdl.DownloadVideoWithProgress(ctx, externalID, cfg.DataFile("videos", externalID+".mp4"), progressCallback); err != nil {
 					return "", err
@@ -1000,7 +1000,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 						ctxlogger.GetLogger(ctx).WithError(err).Warn("failed to update progress")
 					}
 				}
-				
+
 				// Use the new progress-enabled transcode function
 				s, err := ffmpeg.TranscodeWithProgress(ctx, cfg.DataFile("videos", externalID+".mp4"), size+":-2", cfg.DataFile("videos", externalID+"_"+size+".mp4"), progressCallback)
 				if err != nil {
