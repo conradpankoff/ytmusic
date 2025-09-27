@@ -31,9 +31,7 @@
       {{template "content" .}}
     </div>
 
-    <script type="text/hyperscript" src=/static/shared.hs></script>
-    <script src=/static/htmx_v1.9.2.js></script>
-    <script src=/static/hyperscript_v0.9.8.js></script>
+    <script src=/static/app.js></script>
     <script>
       function syncFunction() {
         return true
@@ -148,10 +146,10 @@
 
         {{range $action :=  $Args.Actions}}
           <th>
-            <button _="on click put 'checked' into .action_{{$action | pascal_to_snake}}.checked then halt the event">
+            <button data-action="select-all" data-target="action_{{$action | pascal_to_snake}}" type="button">
               all
             </button>
-            <button _="on click put '' into .action_{{$action | pascal_to_snake}}.checked then halt the event">
+            <button data-action="select-none" data-target="action_{{$action | pascal_to_snake}}" type="button">
               none
             </button>
           </th>

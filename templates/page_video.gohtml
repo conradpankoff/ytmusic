@@ -5,7 +5,7 @@
 {{template "dynamic_dl" .Video}}
 
 {{if .Video.VideoDownloadedAt}}
-  <video class="video" controls _="install Video">
+  <video class="video" controls data-behavior="Video">
     <source src="/data/videos/{{.Video.VideoExternalID}}.mp4" type="video/mp4">
   </video>
 
@@ -17,7 +17,7 @@
 {{end}}
 
 {{if .Video.VideoAudioExtractedAt}}
-  <audio class="audio" controls _="install Audio">
+  <audio class="audio" controls data-behavior="Audio">
     <source src="/data/audio/{{.Video.VideoExternalID}}.mp3" type="audio/mp3">
   </audio>
 
