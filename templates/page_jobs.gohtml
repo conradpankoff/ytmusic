@@ -2,34 +2,7 @@
 
 <h1>Jobs</h1>
 
-<table hx-sse="connect:/jobs/updates" 
-       _="on htmx:sseMessage
-          set data to js(JSON.parse) with event.detail.data
-          set jobId to 'job-' + data.id
-          set jobRow to document.getElementById(jobId)
-          if jobRow exists
-            set statusCell to jobRow.querySelector('.job-status')
-            if statusCell exists
-              put js(data.status.charAt(0).toUpperCase() + data.status.slice(1)) into statusCell.textContent
-            end
-            set progressCell to jobRow.querySelector('.job-progress')
-            if progressCell exists and data.progress is not null
-              set queueName to jobRow.cells[1].textContent
-              if queueName is 'video_download' or queueName is 'video_transcode'
-                set progressHTML to '<div class=\"progress-container\"><div class=\"progress-bar\" style=\"width: ' + data.progress + '%;\">' + data.progress + '%</div></div>'
-                put progressHTML into progressCell.innerHTML
-              else
-                put data.progress + '%' into progressCell.textContent
-              end
-            end
-            remove .job-running from jobRow
-            remove .job-finished from jobRow
-            if data.status is 'running'
-              add .job-running to jobRow
-            else if data.status is 'finished'
-              add .job-finished to jobRow
-            end
-          end">
+<table data-jobs-sse="true">
   <thead>
     <tr>
       <th>ID</th>
