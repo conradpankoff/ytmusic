@@ -102,6 +102,7 @@ func reserve(ctx context.Context, tx *sql.Tx, job *Job, now time.Time, reserveDu
 	reservedUntil := now.Add(reserveDuration)
 	job.ReservedAt = &now
 	job.ReservedUntil = &reservedUntil
+	job.Progress = nil
 
 	if err := sorm.SaveRecord(ctx, tx, job); err != nil {
 		return fmt.Errorf("jobqueue.reserve: could not save job record: %w", err)
