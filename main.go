@@ -514,7 +514,7 @@ func runApplicationWorker(ctx context.Context, addr string) error {
 
 	if cfg.ApplicationMinify {
 		n.UseFunc(func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-			if strings.ToLower(r.Header.Get("connection")) != "upgrade" {
+			if strings.ToLower(r.Header.Get("connection")) != "upgrade" && r.URL.Path != "/jobs/updates" {
 				mw := min.ResponseWriter(rw, r)
 				defer mw.Close()
 				rw = mw
