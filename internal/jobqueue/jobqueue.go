@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math"
+	"math/rand"
 	"net/url"
 	"strings"
 	"time"
@@ -38,6 +40,118 @@ func FormatPayload(s string, m url.Values) string {
 const (
 	DefaultFailureDelay = time.Second * 5
 )
+
+// RetryConfig holds configuration for database retry operations
+type RetryConfig struct {
+	MaxAttempts     int
+	BaseDelay       time.Duration
+	MaxDelay        time.Duration
+	BackoffFactor   float64
+	JitterFactor    float64
+}
+
+// DefaultRetryConfig provides sensible defaults for database retries
+var DefaultRetryConfig = RetryConfig{
+	MaxAttempts:     10,
+	BaseDelay:       50 * time.Millisecond,
+	MaxDelay:        5 * time.Second,
+	BackoffFactor:   2.0,
+	JitterFactor:    0.1,
+}
+
+// retryWithExponentialBackoff executes a function with exponential backoff retry logic
+func retryWithExponentialBackoff(ctx context.Context, config RetryConfig, operation func() error) error {
+	var lastErr error
+	
+	for attempt := 0; attempt < config.MaxAttempts; attempt++ {
+		lastErr = operation()
+		
+		if lastErr == nil {
+			return nil
+		}
+		
+		// Check if this is a database lock error that we should retry
+		if !isDatabaseLockError(lastErr) {
+			return lastErr
+		}
+		
+		// Don't sleep on the last attempt
+		if attempt == config.MaxAttempts-1 {
+			break
+		}
+		
+		// Calculate delay with exponential backoff and jitter
+		delay := calculateBackoffDelay(config, attempt)
+		
+		// Check for context cancellation during sleep
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(delay):
+			// Continue to next attempt
+		}
+	}
+	
+	return lastErr
+}
+
+// isDatabaseLockError checks if an error is related to database locking
+func isDatabaseLockError(err error) bool {
+	if err == nil {
+		return false
+	}
+	
+	errStr := err.Error()
+	return strings.Contains(errStr, "database is locked") ||
+		   strings.Contains(errStr, "database table is locked") ||
+		   strings.Contains(errStr, "SQLITE_BUSY")
+}
+
+// calculateBackoffDelay calculates the delay for exponential backoff with jitter
+func calculateBackoffDelay(config RetryConfig, attempt int) time.Duration {
+	// Calculate exponential backoff delay
+	delay := float64(config.BaseDelay) * math.Pow(config.BackoffFactor, float64(attempt))
+	
+	// Apply jitter to reduce thundering herd effect
+	jitter := delay * config.JitterFactor * (rand.Float64()*2 - 1) // Random value between -jitterFactor and +jitterFactor
+	delay += jitter
+	
+	// Ensure delay doesn't exceed max delay
+	if delay > float64(config.MaxDelay) {
+		delay = float64(config.MaxDelay)
+	}
+	
+	// Ensure delay is not negative
+	if delay < 0 {
+		delay = float64(config.BaseDelay)
+	}
+	
+	return time.Duration(delay)
+}
+
+// beginTransactionWithRetry creates a database transaction with retry logic and appropriate settings
+func beginTransactionWithRetry(ctx context.Context, db *sql.DB) (*sql.Tx, error) {
+	var tx *sql.Tx
+	
+	err := retryWithExponentialBackoff(ctx, DefaultRetryConfig, func() error {
+		var err error
+		// Use appropriate isolation level for SQLite with WAL mode
+		tx, err = db.BeginTx(ctx, &sql.TxOptions{
+			Isolation: sql.LevelReadCommitted,
+			ReadOnly:  false,
+		})
+		return err
+	})
+	
+	return tx, err
+}
+
+// commitTransactionWithRetry commits a transaction with retry logic
+func commitTransactionWithRetry(ctx context.Context, tx *sql.Tx) error {
+	return retryWithExponentialBackoff(ctx, DefaultRetryConfig, func() error {
+		return tx.Commit()
+	})
+}
 
 // job definition
 
@@ -104,7 +218,12 @@ func reserve(ctx context.Context, tx *sql.Tx, job *Job, now time.Time, reserveDu
 	job.ReservedUntil = &reservedUntil
 	job.Progress = nil
 
-	if err := sorm.SaveRecord(ctx, tx, job); err != nil {
+	// Use retry mechanism for save operation
+	err := retryWithExponentialBackoff(ctx, DefaultRetryConfig, func() error {
+		return sorm.SaveRecord(ctx, tx, job)
+	})
+	
+	if err != nil {
 		return fmt.Errorf("jobqueue.reserve: could not save job record: %w", err)
 	}
 
@@ -145,7 +264,12 @@ func finish(ctx context.Context, tx *sql.Tx, job *Job, now time.Time, errorMessa
 		job.FinishedAt = nil
 	}
 
-	if err := sorm.SaveRecord(ctx, tx, job); err != nil {
+	// Use retry mechanism for save operation
+	err := retryWithExponentialBackoff(ctx, DefaultRetryConfig, func() error {
+		return sorm.SaveRecord(ctx, tx, job)
+	})
+	
+	if err != nil {
 		return fmt.Errorf("jobqueue.finish: could not save job record: %w", err)
 	}
 
@@ -164,7 +288,12 @@ func updateProgress(ctx context.Context, tx *sql.Tx, job *Job, progress int) err
 
 	job.Progress = &progress
 
-	if err := sorm.SaveRecord(ctx, tx, job); err != nil {
+	// Use retry mechanism for save operation
+	err := retryWithExponentialBackoff(ctx, DefaultRetryConfig, func() error {
+		return sorm.SaveRecord(ctx, tx, job)
+	})
+	
+	if err != nil {
 		return fmt.Errorf("jobqueue.updateProgress: could not save job record: %w", err)
 	}
 
