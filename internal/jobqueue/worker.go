@@ -4,8 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"math/rand"
-	"strings"
 	"sync"
 	"time"
 
@@ -101,7 +99,12 @@ func (w *Worker) Add(ctx context.Context, tx *sql.Tx, job *Job) error {
 		job.AttemptsRemaining = 5
 	}
 
-	if err := sorm.CreateRecord(ctx, tx, job); err != nil {
+	// Use retry mechanism for job creation
+	err := retryWithExponentialBackoff(ctx, DefaultRetryConfig, func() error {
+		return sorm.CreateRecord(ctx, tx, job)
+	})
+	
+	if err != nil {
 		return fmt.Errorf("jobqueue.Worker.Add: could not create job record: %w", err)
 	}
 
@@ -209,21 +212,26 @@ func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) err
 	
 	db := ctxdb.GetDB(ctx)
 	
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("jobqueue.Worker.UpdateProgress: could not open transaction: %w", err)
-	}
-	defer tx.Rollback()
+	// Use retry mechanism for progress updates with improved transaction handling
+	err := retryWithExponentialBackoff(ctx, DefaultRetryConfig, func() error {
+		tx, err := beginTransactionWithRetry(ctx, db)
+		if err != nil {
+			return fmt.Errorf("could not open transaction: %w", err)
+		}
+		defer tx.Rollback()
+		
+		if err := updateProgress(ctx, tx, job, progress); err != nil {
+			return err
+		}
+		
+		return commitTransactionWithRetry(ctx, tx)
+	})
 	
-	if err := updateProgress(ctx, tx, job, progress); err != nil {
+	if err != nil {
 		return fmt.Errorf("jobqueue.Worker.UpdateProgress: %w", err)
 	}
 	
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("jobqueue.Worker.UpdateProgress: could not commit transaction: %w", err)
-	}
-	
-	// Update throttle tracker
+	// Update throttle tracker only on success
 	w.pm.Lock()
 	w.pt[job.ID] = now
 	w.pm.Unlock()
@@ -234,22 +242,30 @@ func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) err
 func (w *Worker) RunOnce(ctx context.Context) (bool, error) {
 	db := ctxdb.GetDB(ctx)
 
-	tx1, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return false, fmt.Errorf("jobqueue.Worker.RunOnce: could not open transaction to find/reserve: %w", err)
-	}
-	defer tx1.Rollback()
-
-	attempts := 25
-again:
-	attempts--
-	job, err := findNextAndReserve(ctx, tx1, w.GetQueueNames(), time.Now(), time.Minute*5)
-	if err != nil {
-		if strings.Contains(err.Error(), "database is locked") && attempts > 0 {
-			time.Sleep(time.Duration(rand.Int63n(int64(time.Millisecond) * 500)))
-			goto again
+	var job *Job
+	
+	// Use retry mechanism for job reservation with improved transaction handling
+	err := retryWithExponentialBackoff(ctx, DefaultRetryConfig, func() error {
+		tx1, err := beginTransactionWithRetry(ctx, db)
+		if err != nil {
+			return fmt.Errorf("could not open transaction to find/reserve: %w", err)
 		}
-		return false, fmt.Errorf("jobqueue.Worker.RunOnce: could not find/reserve job: %w", err)
+		defer tx1.Rollback()
+
+		job, err = findNextAndReserve(ctx, tx1, w.GetQueueNames(), time.Now(), time.Minute*5)
+		if err != nil {
+			return fmt.Errorf("could not find/reserve job: %w", err)
+		}
+
+		if job != nil {
+			return commitTransactionWithRetry(ctx, tx1)
+		}
+		
+		return nil
+	})
+	
+	if err != nil {
+		return false, fmt.Errorf("jobqueue.Worker.RunOnce: %w", err)
 	}
 
 	if job == nil {
@@ -260,10 +276,6 @@ again:
 		"job_queue_name": job.QueueName,
 		"job_id":         job.ID,
 	})
-
-	if err := tx1.Commit(); err != nil {
-		return false, fmt.Errorf("jobqueue.Worker.RunOnce: could not commit transaction to find/reserve: %w", err)
-	}
 
 	l.Info("found pending job, running function")
 
@@ -280,18 +292,23 @@ again:
 
 	l.WithFields(logrus.Fields{"error_message": errorMessage, "output_message": outputMessage}).Info("finished job")
 
-	tx2, err := db.BeginTx(ctx, nil)
+	// Use retry mechanism for job completion with improved transaction handling
+	err = retryWithExponentialBackoff(ctx, DefaultRetryConfig, func() error {
+		tx2, err := beginTransactionWithRetry(ctx, db)
+		if err != nil {
+			return fmt.Errorf("could not open transaction to finish: %w", err)
+		}
+		defer tx2.Rollback()
+
+		if err := finish(ctx, tx2, job, time.Now(), errorMessage, outputMessage); err != nil {
+			return fmt.Errorf("could not finish job: %w", err)
+		}
+
+		return commitTransactionWithRetry(ctx, tx2)
+	})
+	
 	if err != nil {
-		return false, fmt.Errorf("jobqueue.Worker.RunOnce: could not open transaction to finish: %w", err)
-	}
-	defer tx2.Rollback()
-
-	if err := finish(ctx, tx2, job, time.Now(), errorMessage, outputMessage); err != nil {
-		return false, fmt.Errorf("jobqueue.Worker.RunOnce: could not finish job: %w", err)
-	}
-
-	if err := tx2.Commit(); err != nil {
-		return false, fmt.Errorf("jobqueue.Worker.RunOnce: could not commit transaction to finish: %w", err)
+		return false, fmt.Errorf("jobqueue.Worker.RunOnce: %w", err)
 	}
 
 	// Clean up progress throttling for finished job
