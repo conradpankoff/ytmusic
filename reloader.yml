@@ -19,3 +19,5 @@ watchers:
       - ytmusic
       - config.toml
       - config.yaml
+  - name: pot provider
+    command: docker run --rm --name bgutil-provider --publish 4416:4416 --init brainicism/bgutil-ytdlp-pot-provider
