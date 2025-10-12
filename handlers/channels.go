@@ -23,7 +23,7 @@ func Channels(rw http.ResponseWriter, r *http.Request) {
 	order := []sb.AsOrderingTerm{sb.OrderDesc(models.ChannelSearchTable.C("ChannelCreatedAt"))}
 
 	if q != "" {
-		// Temporarily disabled FTS search - using LIKE for now  
+		// Temporarily disabled FTS search - using LIKE for now
 		condition = sb.BinaryOperator("like", models.ChannelSearchTable.C("ChannelTitle"), sb.Bind("%"+q+"%"))
 		order = []sb.AsOrderingTerm{sb.OrderDesc(models.ChannelSearchTable.C("ChannelCreatedAt"))}
 	}

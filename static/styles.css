@@ -90,6 +90,7 @@ h1 {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: #2c3e50; /* Fallback for browsers that don't support gradient text */
 }
 
 h1::after {
@@ -122,7 +123,7 @@ h3 {
   width: 100%;
   padding: 12px 20px;
   box-shadow: 0 2px 20px rgba(0,0,0,0.1);
-  backdrop-filter: blur(10px);
+  /* backdrop-filter: blur(10px); - Disabled for better browser compatibility */
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -211,7 +212,7 @@ h3 {
   max-width: 1400px;
   margin: 0 auto;
   background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(10px);
+  /* backdrop-filter: blur(10px); - Disabled for better browser compatibility */
   border-radius: 20px 20px 0 0;
   box-shadow: 0 -5px 30px rgba(0,0,0,0.1);
   min-height: calc(100vh - 60px);
@@ -391,9 +392,6 @@ p > a:hover {
 
 video {
   max-width: 100%;
-}
-
-.player ol {
 }
 
 .player ol li {
