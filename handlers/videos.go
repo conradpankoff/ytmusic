@@ -23,8 +23,9 @@ func Videos(rw http.ResponseWriter, r *http.Request) {
 	order := []sb.AsOrderingTerm{sb.OrderDesc(models.VideoSearchTable.C("VideoCreatedAt"))}
 
 	if q != "" {
-		condition = sb.BinaryOperator("match", sb.Literal("video_search"), sb.Bind(q))
-		order = []sb.AsOrderingTerm{sb.OrderDesc(sb.Literal("rank"))}
+		// Temporarily disabled FTS search - using LIKE for now
+		condition = sb.BinaryOperator("like", models.VideoSearchTable.C("VideoTitle"), sb.Bind("%"+q+"%"))
+		order = []sb.AsOrderingTerm{sb.OrderDesc(models.VideoSearchTable.C("VideoCreatedAt"))}
 	}
 
 	var videos []models.VideoSearch
@@ -55,8 +56,9 @@ func VideosAudio(rw http.ResponseWriter, r *http.Request) {
 	order := []sb.AsOrderingTerm{sb.OrderDesc(models.VideoSearchTable.C("VideoCreatedAt"))}
 
 	if q != "" {
-		condition = sb.BinaryOperator("match", sb.Literal("video_search"), sb.Bind(q))
-		order = []sb.AsOrderingTerm{sb.OrderDesc(sb.Literal("rank"))}
+		// Temporarily disabled FTS search - using LIKE for now
+		condition = sb.BinaryOperator("like", models.VideoSearchTable.C("VideoTitle"), sb.Bind("%"+q+"%"))
+		order = []sb.AsOrderingTerm{sb.OrderDesc(models.VideoSearchTable.C("VideoCreatedAt"))}
 	}
 
 	var videos []models.VideoSearch

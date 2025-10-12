@@ -22,12 +22,13 @@ func Index(rw http.ResponseWriter, r *http.Request) {
 	videosOrder := []sb.AsOrderingTerm{sb.OrderDesc(models.VideoSearchTable.C("VideoCreatedAt"))}
 
 	if q != "" {
-		channelsCondition = sb.BinaryOperator("match", sb.Literal("channel_search"), sb.Bind(q))
-		channelsOrder = []sb.AsOrderingTerm{sb.OrderDesc(sb.Literal("rank"))}
-		playlistsCondition = sb.BinaryOperator("match", sb.Literal("playlist_search"), sb.Bind(q))
-		playlistsOrder = []sb.AsOrderingTerm{sb.OrderDesc(sb.Literal("rank"))}
-		videosCondition = sb.BinaryOperator("match", sb.Literal("video_search"), sb.Bind(q))
-		videosOrder = []sb.AsOrderingTerm{sb.OrderDesc(sb.Literal("rank"))}
+		// Temporarily disabled FTS search - using LIKE for now
+		channelsCondition = sb.BinaryOperator("like", models.ChannelSearchTable.C("ChannelTitle"), sb.Bind("%"+q+"%"))
+		channelsOrder = []sb.AsOrderingTerm{sb.OrderDesc(models.ChannelSearchTable.C("ChannelCreatedAt"))}
+		playlistsCondition = sb.BinaryOperator("like", models.PlaylistSearchTable.C("PlaylistTitle"), sb.Bind("%"+q+"%"))
+		playlistsOrder = []sb.AsOrderingTerm{sb.OrderDesc(models.PlaylistSearchTable.C("PlaylistCreatedAt"))}
+		videosCondition = sb.BinaryOperator("like", models.VideoSearchTable.C("VideoTitle"), sb.Bind("%"+q+"%"))
+		videosOrder = []sb.AsOrderingTerm{sb.OrderDesc(models.VideoSearchTable.C("VideoCreatedAt"))}
 	}
 
 	var channels []models.ChannelSearch

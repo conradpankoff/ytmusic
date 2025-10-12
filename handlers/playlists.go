@@ -24,8 +24,9 @@ func Playlists(rw http.ResponseWriter, r *http.Request) {
 	order := []sb.AsOrderingTerm{sb.OrderDesc(models.PlaylistSearchTable.C("PlaylistCreatedAt"))}
 
 	if q != "" {
-		condition = sb.BinaryOperator("match", sb.Literal("playlist_search"), sb.Bind(q))
-		order = []sb.AsOrderingTerm{sb.OrderDesc(sb.Literal("rank"))}
+		// Temporarily disabled FTS search - using LIKE for now
+		condition = sb.BinaryOperator("like", models.PlaylistSearchTable.C("PlaylistTitle"), sb.Bind("%"+q+"%"))
+		order = []sb.AsOrderingTerm{sb.OrderDesc(models.PlaylistSearchTable.C("PlaylistCreatedAt"))}
 	}
 
 	var playlists []models.PlaylistSearch
