@@ -98,8 +98,9 @@ func ChannelAudio(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_channel_audio", map[string]interface{}{
-		"Channel": channel,
-		"Videos":  videos,
+		"TemplateName": "page_channel_audio",
+		"Channel":      channel,
+		"Videos":       videos,
 	}); err != nil {
 		panic(err)
 	}

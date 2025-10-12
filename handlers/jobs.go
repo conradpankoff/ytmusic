@@ -17,7 +17,8 @@ func Jobs(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_jobs", map[string]interface{}{
-		"Jobs": jobs,
+		"TemplateName": "page_jobs",
+		"Jobs":         jobs,
 	}); err != nil {
 		panic(err)
 	}

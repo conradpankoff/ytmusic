@@ -108,9 +108,10 @@ func PlaylistAudio(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_playlist_audio", map[string]interface{}{
-		"Playlist": playlist,
-		"Channel":  channel,
-		"Videos":   videos,
+		"TemplateName": "page_playlist_audio",
+		"Playlist":     playlist,
+		"Channel":      channel,
+		"Videos":       videos,
 	}); err != nil {
 		panic(err)
 	}
@@ -184,11 +185,12 @@ func PlaylistVideo(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_playlist_video", map[string]interface{}{
-		"Playlist":  playlist,
-		"Channel":   channel,
-		"Videos":    videos,
-		"Video":     video,
-		"NextVideo": nextVideo,
+		"TemplateName": "page_playlist_video",
+		"Playlist":     playlist,
+		"Channel":      channel,
+		"Videos":       videos,
+		"Video":        video,
+		"NextVideo":    nextVideo,
 	}); err != nil {
 		panic(err)
 	}
