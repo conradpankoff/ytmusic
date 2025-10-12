@@ -31,7 +31,22 @@
       {{template "content" .}}
     </div>
 
-    <script src=/static/app.js></script>
+    <!-- Always load common functionality -->
+    <script src="/static/js/common.js"></script>
+    
+    <!-- Conditionally load page-specific JavaScript -->
+    {{if or (eq .TemplateName "page_video") (eq .TemplateName "page_playlist_video")}}
+    <script src="/static/js/video-player.js"></script>
+    {{end}}
+    
+    {{if or (eq .TemplateName "page_videos_audio") (eq .TemplateName "page_channel_audio") (eq .TemplateName "page_playlist_audio")}}
+    <script src="/static/js/audio-player.js"></script>
+    {{end}}
+    
+    {{if eq .TemplateName "page_jobs"}}
+    <script src="/static/js/jobs.js"></script>
+    {{end}}
+    
     <script>
       function syncFunction() {
         return true

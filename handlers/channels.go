@@ -40,8 +40,9 @@ func Channels(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_channels", map[string]interface{}{
-		"Q":        q,
-		"Channels": channels,
+		"TemplateName": "page_channels",
+		"Q":            q,
+		"Channels":     channels,
 	}); err != nil {
 		panic(err)
 	}
@@ -71,9 +72,10 @@ func Channel(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_channel", map[string]interface{}{
-		"Channel":   channel,
-		"Playlists": playlists,
-		"Videos":    videos,
+		"TemplateName": "page_channel",
+		"Channel":      channel,
+		"Playlists":    playlists,
+		"Videos":       videos,
 	}); err != nil {
 		panic(err)
 	}
@@ -98,8 +100,9 @@ func ChannelAudio(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_channel_audio", map[string]interface{}{
-		"Channel": channel,
-		"Videos":  videos,
+		"TemplateName": "page_channel_audio",
+		"Channel":      channel,
+		"Videos":       videos,
 	}); err != nil {
 		panic(err)
 	}
