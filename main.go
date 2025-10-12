@@ -198,6 +198,25 @@ func main() {
 	}
 	defer db.Close()
 
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(time.Hour)
+
+	sqliteConfig := []string{
+		"PRAGMA journal_mode=WAL",    // Use Write-Ahead Logging for better concurrency
+		"PRAGMA synchronous=NORMAL",  // Balance between safety and performance
+		"PRAGMA busy_timeout=30000",  // Wait up to 30 seconds for locks
+		"PRAGMA cache_size=-64000",   // Use 64MB cache
+		"PRAGMA temp_store=memory",   // Use memory for temporary tables
+		"PRAGMA mmap_size=268435456", // Use 256MB memory-mapped I/O
+	}
+
+	for _, pragma := range sqliteConfig {
+		if _, err := db.Exec(pragma); err != nil {
+			logger.WithError(err).WithField("pragma", pragma).Warn("failed to set SQLite pragma")
+		}
+	}
+
 	ctx = ctxdb.WithDB(ctx, db)
 
 	cacheDB, err := bbolt.Open(cfg.ApplicationCachePath, 0o600, nil)
