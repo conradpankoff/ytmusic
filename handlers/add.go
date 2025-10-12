@@ -18,7 +18,9 @@ import (
 )
 
 func Add(rw http.ResponseWriter, r *http.Request) {
-	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_add", map[string]interface{}{}); err != nil {
+	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_add", map[string]interface{}{
+		"TemplateName": "page_add",
+	}); err != nil {
 		panic(err)
 	}
 }

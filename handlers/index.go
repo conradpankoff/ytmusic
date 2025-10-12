@@ -67,10 +67,11 @@ func Index(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_index", map[string]interface{}{
-		"Q":         q,
-		"Channels":  channels,
-		"Playlists": playlists,
-		"Videos":    videos,
+		"TemplateName": "page_index",
+		"Q":            q,
+		"Channels":     channels,
+		"Playlists":    playlists,
+		"Videos":       videos,
 	}); err != nil {
 		panic(err)
 	}
