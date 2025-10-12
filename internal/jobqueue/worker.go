@@ -185,10 +185,10 @@ func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) err
 	w.pm.RLock()
 	lastUpdate, exists := w.pt[job.ID]
 	w.pm.RUnlock()
-	
+
 	now := time.Now()
 	shouldUpdate := false
-	
+
 	if !exists {
 		shouldUpdate = true
 	} else {
@@ -202,32 +202,20 @@ func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) err
 		}
 		shouldUpdate = timePassed || progressJump || progress == 100 // Always update on completion
 	}
-	
+
 	if !shouldUpdate {
 		return nil // Skip this update to reduce database load
 	}
-	
-	db := ctxdb.GetDB(ctx)
-	
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("jobqueue.Worker.UpdateProgress: could not open transaction: %w", err)
+
+	if _, err := ctxdb.GetDB(ctx).ExecContext(ctx, "update jobs set progress = $1 where id = $2", progress, job.ID); err != nil {
+		return fmt.Errorf("jobqueue.Worker.UpdateProgress: could not update job record with progress: %w", err)
 	}
-	defer tx.Rollback()
-	
-	if err := updateProgress(ctx, tx, job, progress); err != nil {
-		return fmt.Errorf("jobqueue.Worker.UpdateProgress: %w", err)
-	}
-	
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("jobqueue.Worker.UpdateProgress: could not commit transaction: %w", err)
-	}
-	
+
 	// Update throttle tracker
 	w.pm.Lock()
 	w.pt[job.ID] = now
 	w.pm.Unlock()
-	
+
 	return nil
 }
 
