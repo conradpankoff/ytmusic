@@ -212,7 +212,7 @@ func main() {
 	}
 
 	for _, pragma := range sqliteConfig {
-		if _, err := db.Exec(pragma); err != nil {
+		if _, err := db.ExecContext(ctx, pragma); err != nil {
 			logger.WithError(err).WithField("pragma", pragma).Warn("failed to set SQLite pragma")
 		}
 	}
