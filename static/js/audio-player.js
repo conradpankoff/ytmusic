@@ -5,59 +5,63 @@ function initAudioPlayer() {
         current: null
     };
 
-    function play(item) {
+    const audio = document.querySelector('audio');
+    if (!audio) {
+        console.error("Audio element not found. Cannot initialize player.");
+        return; // Cannot initialize player without audio element
+    }
+
+    // Attach ended listener directly to the audio element for reliable track progression
+    audio.addEventListener('ended', function() {
+        next();
+    });
+
+
+    function play(item, shouldAutoplay = true) {
         if (!item) return;
 
-        const audio = document.querySelector('audio');
-        if (!audio) return;
+        // Remove current class from all items
+        document.querySelectorAll('.ready').forEach(el => el.classList.remove('current'));
 
-        // Remove previous canplay listener if it exists
-        if (audio._canplayListener) {
-            audio.removeEventListener('canplay', audio._canplayListener);
-            audio._canplayListener = null;
+        // Update title
+        const titleEl = document.querySelector('.title');
+        if (titleEl) {
+            titleEl.textContent = item.textContent;
         }
 
-        if (item !== playerState.current) {
-            // Store the current paused state before changing source
-            const wasPaused = audio.paused;
+        // Store the current paused state before changing source
+         const wasPaused = audio.paused;
 
-            // Remove current class from all items
-            document.querySelectorAll('.ready').forEach(el => el.classList.remove('current'));
+        // Update audio source
+        audio.src = `/data/audio/${item.dataset.id}.mp3`;
 
-            // Update title
-            const titleEl = document.querySelector('.title');
-            if (titleEl) {
-                titleEl.textContent = item.textContent;
-            }
+        // Set new current
+        item.classList.add('current');
+        playerState.current = item;
 
-            // Update audio source
-            audio.src = `/data/audio/${item.dataset.id}.mp3`;
-
-            // Add event listener to play when audio is ready, *only if it was playing before*
-            const newCanplayListener = function() {
-                // Check if the audio was playing before the source change
-                if (!wasPaused) {
-                    audio.play();
-                }
-                audio.removeEventListener('canplay', newCanplayListener); // Remove listener after playback starts
-                audio._canplayListener = null; // Clear the reference
+        // Explicitly attempt to play if autoplay is requested or if it was playing before
+        if (shouldAutoplay || !wasPaused) {
+            // Use a canplay listener as a fallback if immediate play fails
+            const tempCanplayListener = function() {
+                // Check if it's still paused before playing
+                 if (audio.paused) {
+                    audio.play().catch(error => {
+                        console.error("Autoplay prevented on canplay:", error);
+                    });
+                 }
+                audio.removeEventListener('canplay', tempCanplayListener);
             };
-            audio.addEventListener('canplay', newCanplayListener);
-            audio._canplayListener = newCanplayListener; // Store reference to remove later
+            audio.addEventListener('canplay', tempCanplayListener);
 
-            // Set new current
-            item.classList.add('current');
-            playerState.current = item;
-        } else {
-            // If it's the current item, just ensure it's playing if paused
-            if (audio.readyState > 1 && audio.paused) {
-                 audio.play();
-            }
+            // Attempt to play immediately (might be blocked by autoplay policies)
+             audio.play().catch(error => {
+                 console.warn("Initial play call failed:", error);
+                 // The canplay listener will attempt to play again when ready
+             });
         }
     }
 
     function pause() {
-        const audio = document.querySelector('audio');
         if (audio) {
             audio.pause();
         }
@@ -69,7 +73,7 @@ function initAudioPlayer() {
         const items = Array.from(document.querySelectorAll('.ready'));
         const currentIndex = items.indexOf(playerState.current);
         const nextIndex = (currentIndex + 1) % items.length;
-        play(items[nextIndex]);
+        play(items[nextIndex], true); // Autoplay the next track
     }
 
     function prev() {
@@ -78,12 +82,11 @@ function initAudioPlayer() {
         const items = Array.from(document.querySelectorAll('.ready'));
         const currentIndex = items.indexOf(playerState.current);
         const prevIndex = (currentIndex - 1 + items.length) % items.length;
-        play(items[prevIndex]);
+        play(items[prevIndex], true); // Autoplay the previous track
     }
 
     // Keyboard controls for audio player
     document.addEventListener('keydown', function(event) {
-        const audio = document.querySelector('audio');
         if (!audio) return;
 
         // Don't interfere if user is typing in an input field
@@ -97,10 +100,12 @@ function initAudioPlayer() {
                 event.preventDefault();
                 if (audio.paused) {
                     if (playerState.current) {
-                        play(playerState.current);
+                        audio.play().catch(error => console.error("Play failed:", error));
                     } else {
                         const firstReady = document.querySelector('.ready');
-                        if (firstReady) play(firstReady);
+                        if (firstReady) {
+                            play(firstReady, true); // Set source and autoplay
+                        }
                     }
                 } else {
                     pause();
@@ -160,24 +165,21 @@ function initAudioPlayer() {
     // Initialize with first ready item
     const firstReady = document.querySelector('.ready');
     if (firstReady) {
-        play(firstReady);
+        play(firstReady, true); // Autoplay the first track on load
     }
-
-    // Audio event handler
-    document.addEventListener('ended', function(event) {
-        if (event.target.tagName === 'AUDIO') {
-            next();
-        }
-    });
 
     // Control button handlers
     document.addEventListener('click', function(event) {
+        if (!audio) return;
+
         if (event.target.classList.contains('play')) {
             if (playerState.current) {
-                play(playerState.current);
+                audio.play().catch(error => console.error("Play failed:", error));
             } else {
                 const firstReady = document.querySelector('.ready');
-                if (firstReady) play(firstReady);
+                if (firstReady) {
+                    play(firstReady, true); // Set source and autoplay
+                }
             }
         } else if (event.target.classList.contains('pause')) {
             pause();
@@ -186,7 +188,7 @@ function initAudioPlayer() {
         } else if (event.target.classList.contains('ready')) {
             const listItem = event.target.closest('li');
             if (listItem) {
-                play(listItem);
+                play(listItem, true); // Set source and autoplay
             }
         }
     });
@@ -196,3 +198,4 @@ function initAudioPlayer() {
 document.addEventListener('DOMContentLoaded', function() {
     initAudioPlayer();
 });
+
