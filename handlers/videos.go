@@ -23,7 +23,7 @@ func Videos(rw http.ResponseWriter, r *http.Request) {
 	order := []sb.AsOrderingTerm{sb.OrderDesc(models.VideoSearchTable.C("VideoCreatedAt"))}
 
 	if q != "" {
-		// Temporarily disabled FTS search - using LIKE for now
+		// Using LIKE search - FTS5 module not available in current SQLite build
 		condition = sb.BinaryOperator("like", models.VideoSearchTable.C("VideoTitle"), sb.Bind("%"+q+"%"))
 		order = []sb.AsOrderingTerm{sb.OrderDesc(models.VideoSearchTable.C("VideoCreatedAt"))}
 	}
@@ -56,7 +56,7 @@ func VideosAudio(rw http.ResponseWriter, r *http.Request) {
 	order := []sb.AsOrderingTerm{sb.OrderDesc(models.VideoSearchTable.C("VideoCreatedAt"))}
 
 	if q != "" {
-		// Temporarily disabled FTS search - using LIKE for now
+		// Using LIKE search - FTS5 module not available in current SQLite build
 		condition = sb.BinaryOperator("like", models.VideoSearchTable.C("VideoTitle"), sb.Bind("%"+q+"%"))
 		order = []sb.AsOrderingTerm{sb.OrderDesc(models.VideoSearchTable.C("VideoCreatedAt"))}
 	}
