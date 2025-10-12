@@ -23,9 +23,8 @@ func Channels(rw http.ResponseWriter, r *http.Request) {
 	order := []sb.AsOrderingTerm{sb.OrderDesc(models.ChannelSearchTable.C("ChannelCreatedAt"))}
 
 	if q != "" {
-		// Using LIKE search - FTS5 module not available in current SQLite build
-		condition = sb.BinaryOperator("like", models.ChannelSearchTable.C("ChannelTitle"), sb.Bind("%"+q+"%"))
-		order = []sb.AsOrderingTerm{sb.OrderDesc(models.ChannelSearchTable.C("ChannelCreatedAt"))}
+		condition = sb.BinaryOperator("match", sb.Literal("channel_search"), sb.Bind(q))
+		order = []sb.AsOrderingTerm{sb.OrderDesc(sb.Literal("rank"))}
 	}
 
 	var channels []models.ChannelSearch

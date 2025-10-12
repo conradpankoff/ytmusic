@@ -14,20 +14,32 @@ import (
 func Index(rw http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 
-	// Temporarily disable search functionality due to FTS5 compatibility issues
-	// TODO: Restore FTS5 search with compatible SQLite library
-	
+	var channelsCondition sb.AsExpr
+	channelsOrder := []sb.AsOrderingTerm{sb.OrderDesc(models.ChannelSearchTable.C("ChannelCreatedAt"))}
+	var playlistsCondition sb.AsExpr
+	playlistsOrder := []sb.AsOrderingTerm{sb.OrderDesc(models.PlaylistSearchTable.C("PlaylistCreatedAt"))}
+	var videosCondition sb.AsExpr
+	videosOrder := []sb.AsOrderingTerm{sb.OrderDesc(models.VideoSearchTable.C("VideoCreatedAt"))}
+
+	if q != "" {
+		channelsCondition = sb.BinaryOperator("match", sb.Literal("channel_search"), sb.Bind(q))
+		channelsOrder = []sb.AsOrderingTerm{sb.OrderDesc(sb.Literal("rank"))}
+		playlistsCondition = sb.BinaryOperator("match", sb.Literal("playlist_search"), sb.Bind(q))
+		playlistsOrder = []sb.AsOrderingTerm{sb.OrderDesc(sb.Literal("rank"))}
+		videosCondition = sb.BinaryOperator("match", sb.Literal("video_search"), sb.Bind(q))
+		videosOrder = []sb.AsOrderingTerm{sb.OrderDesc(sb.Literal("rank"))}
+	}
+
 	var channels []models.ChannelSearch
 	if err := qsorm.FindWhere(
 		r.Context(),
 		ctxdb.GetDB(r.Context()),
 		&channels,
-		nil, // No search condition for now
-		[]sb.AsOrderingTerm{sb.OrderDesc(models.ChannelSearchTable.C("ChannelCreatedAt"))},
+		channelsCondition,
+		channelsOrder,
 		sb.OffsetLimit(nil, sb.Literal("50")),
 	); err != nil {
-		// If ChannelSearch table doesn't exist, create empty slice
-		channels = []models.ChannelSearch{}
+		panic(err)
 	}
 
 	var playlists []models.PlaylistSearch
@@ -35,12 +47,11 @@ func Index(rw http.ResponseWriter, r *http.Request) {
 		r.Context(),
 		ctxdb.GetDB(r.Context()),
 		&playlists,
-		nil, // No search condition for now
-		[]sb.AsOrderingTerm{sb.OrderDesc(models.PlaylistSearchTable.C("PlaylistCreatedAt"))},
+		playlistsCondition,
+		playlistsOrder,
 		sb.OffsetLimit(nil, sb.Literal("50")),
 	); err != nil {
-		// If PlaylistSearch table doesn't exist, create empty slice
-		playlists = []models.PlaylistSearch{}
+		panic(err)
 	}
 
 	var videos []models.VideoSearch
@@ -48,12 +59,11 @@ func Index(rw http.ResponseWriter, r *http.Request) {
 		r.Context(),
 		ctxdb.GetDB(r.Context()),
 		&videos,
-		nil, // No search condition for now
-		[]sb.AsOrderingTerm{sb.OrderDesc(models.VideoSearchTable.C("VideoCreatedAt"))},
+		videosCondition,
+		videosOrder,
 		sb.OffsetLimit(nil, sb.Literal("1000")),
 	); err != nil {
-		// If VideoSearch table doesn't exist, create empty slice
-		videos = []models.VideoSearch{}
+		panic(err)
 	}
 
 	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_index", map[string]interface{}{

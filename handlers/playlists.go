@@ -24,9 +24,8 @@ func Playlists(rw http.ResponseWriter, r *http.Request) {
 	order := []sb.AsOrderingTerm{sb.OrderDesc(models.PlaylistSearchTable.C("PlaylistCreatedAt"))}
 
 	if q != "" {
-		// Using LIKE search - FTS5 module not available in current SQLite build
-		condition = sb.BinaryOperator("like", models.PlaylistSearchTable.C("PlaylistTitle"), sb.Bind("%"+q+"%"))
-		order = []sb.AsOrderingTerm{sb.OrderDesc(models.PlaylistSearchTable.C("PlaylistCreatedAt"))}
+		condition = sb.BinaryOperator("match", sb.Literal("playlist_search"), sb.Bind(q))
+		order = []sb.AsOrderingTerm{sb.OrderDesc(sb.Literal("rank"))}
 	}
 
 	var playlists []models.PlaylistSearch
