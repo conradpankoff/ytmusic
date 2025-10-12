@@ -40,8 +40,9 @@ func Videos(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_videos", map[string]interface{}{
-		"Q":      q,
-		"Videos": videos,
+		"TemplateName": "page_videos",
+		"Q":            q,
+		"Videos":       videos,
 	}); err != nil {
 		panic(err)
 	}
@@ -71,8 +72,9 @@ func VideosAudio(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_videos_audio", map[string]interface{}{
-		"Q":      q,
-		"Videos": videos,
+		"TemplateName": "page_videos_audio",
+		"Q":            q,
+		"Videos":       videos,
 	}); err != nil {
 		panic(err)
 	}
@@ -138,6 +140,7 @@ func Video(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ctxtemplate.ExecuteTemplateIntoResponse(r, rw, "page_video", map[string]interface{}{
+		"TemplateName":     "page_video",
 		"Video":            video,
 		"Channel":          channel,
 		"VideoInPlaylists": videoInPlaylists,
