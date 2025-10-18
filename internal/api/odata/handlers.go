@@ -132,7 +132,8 @@ func (h *Handler) Metadata(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetChannels(w http.ResponseWriter, r *http.Request) {
 	page, limit := h.parseODataParams(r)
 	
-	channels, total, err := h.service.GetChannels(r.Context(), page, limit)
+	// For OData, we could support $search in the future, but for now pass empty search
+	channels, total, err := h.service.GetChannels(r.Context(), page, limit, "")
 	if err != nil {
 		api.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to get channels", err.Error())
 		return
@@ -172,7 +173,8 @@ func (h *Handler) GetChannel(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetPlaylists(w http.ResponseWriter, r *http.Request) {
 	page, limit := h.parseODataParams(r)
 	
-	playlists, total, err := h.service.GetPlaylists(r.Context(), page, limit, nil)
+	// For OData, we could support $search in the future, but for now pass empty search
+	playlists, total, err := h.service.GetPlaylists(r.Context(), page, limit, nil, "")
 	if err != nil {
 		api.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to get playlists", err.Error())
 		return
@@ -212,7 +214,8 @@ func (h *Handler) GetPlaylist(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetVideos(w http.ResponseWriter, r *http.Request) {
 	page, limit := h.parseODataParams(r)
 	
-	videos, total, err := h.service.GetVideos(r.Context(), page, limit, nil, nil)
+	// For OData, we could support $search in the future, but for now pass empty search
+	videos, total, err := h.service.GetVideos(r.Context(), page, limit, nil, nil, "")
 	if err != nil {
 		api.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to get videos", err.Error())
 		return

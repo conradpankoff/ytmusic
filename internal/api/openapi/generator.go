@@ -82,7 +82,7 @@ func GenerateOpenAPISpec() *OpenAPISpec {
 						{
 							"name":        "q",
 							"in":          "query",
-							"description": "Search query for channel titles",
+							"description": "Search query for channel titles using full-text search",
 							"required":    false,
 							"schema":      map[string]interface{}{"type": "string"},
 						},
@@ -145,6 +145,107 @@ func GenerateOpenAPISpec() *OpenAPISpec {
 							"content": map[string]interface{}{
 								"application/json": map[string]interface{}{
 									"schema": map[string]interface{}{"$ref": "#/components/schemas/ErrorResponse"},
+								},
+							},
+						},
+					},
+				},
+			},
+			"/rest/playlists": map[string]interface{}{
+				"get": map[string]interface{}{
+					"summary":     "Get playlists",
+					"description": "Retrieve a paginated list of YouTube music playlists with optional search and filtering",
+					"tags":        []string{"Playlists"},
+					"parameters": []map[string]interface{}{
+						{
+							"name":        "page",
+							"in":          "query",
+							"description": "Page number (default: 1)",
+							"required":    false,
+							"schema":      map[string]interface{}{"type": "integer", "minimum": 1},
+						},
+						{
+							"name":        "limit",
+							"in":          "query",
+							"description": "Items per page (default: 50, max: 1000)",
+							"required":    false,
+							"schema":      map[string]interface{}{"type": "integer", "minimum": 1, "maximum": 1000},
+						},
+						{
+							"name":        "q",
+							"in":          "query",
+							"description": "Search query for playlist titles using full-text search",
+							"required":    false,
+							"schema":      map[string]interface{}{"type": "string"},
+						},
+						{
+							"name":        "channel_id",
+							"in":          "query",
+							"description": "Filter by channel ID",
+							"required":    false,
+							"schema":      map[string]interface{}{"type": "integer", "minimum": 1},
+						},
+					},
+					"responses": map[string]interface{}{
+						"200": map[string]interface{}{
+							"description": "Successful response",
+							"content": map[string]interface{}{
+								"application/json": map[string]interface{}{
+									"schema": map[string]interface{}{"$ref": "#/components/schemas/PaginatedPlaylistResponse"},
+								},
+							},
+						},
+					},
+				},
+			},
+			"/rest/videos": map[string]interface{}{
+				"get": map[string]interface{}{
+					"summary":     "Get videos",
+					"description": "Retrieve a paginated list of YouTube music videos with optional search and filtering",
+					"tags":        []string{"Videos"},
+					"parameters": []map[string]interface{}{
+						{
+							"name":        "page",
+							"in":          "query",
+							"description": "Page number (default: 1)",
+							"required":    false,
+							"schema":      map[string]interface{}{"type": "integer", "minimum": 1},
+						},
+						{
+							"name":        "limit",
+							"in":          "query",
+							"description": "Items per page (default: 50, max: 1000)",
+							"required":    false,
+							"schema":      map[string]interface{}{"type": "integer", "minimum": 1, "maximum": 1000},
+						},
+						{
+							"name":        "q",
+							"in":          "query",
+							"description": "Search query for video titles and descriptions using full-text search",
+							"required":    false,
+							"schema":      map[string]interface{}{"type": "string"},
+						},
+						{
+							"name":        "channel_id",
+							"in":          "query",
+							"description": "Filter by channel ID",
+							"required":    false,
+							"schema":      map[string]interface{}{"type": "integer", "minimum": 1},
+						},
+						{
+							"name":        "playlist_id",
+							"in":          "query",
+							"description": "Filter by playlist ID",
+							"required":    false,
+							"schema":      map[string]interface{}{"type": "integer", "minimum": 1},
+						},
+					},
+					"responses": map[string]interface{}{
+						"200": map[string]interface{}{
+							"description": "Successful response",
+							"content": map[string]interface{}{
+								"application/json": map[string]interface{}{
+									"schema": map[string]interface{}{"$ref": "#/components/schemas/PaginatedVideoResponse"},
 								},
 							},
 						},
@@ -373,6 +474,56 @@ func GenerateOpenAPISpec() *OpenAPISpec {
 						"data": map[string]interface{}{
 							"type":  "array",
 							"items": map[string]interface{}{"$ref": "#/components/schemas/Channel"},
+						},
+						"page": map[string]interface{}{
+							"type":        "integer",
+							"description": "Current page number",
+						},
+						"limit": map[string]interface{}{
+							"type":        "integer",
+							"description": "Items per page",
+						},
+						"total": map[string]interface{}{
+							"type":        "integer",
+							"description": "Total number of items",
+						},
+						"has_more": map[string]interface{}{
+							"type":        "boolean",
+							"description": "Whether there are more pages",
+						},
+					},
+				},
+				"PaginatedPlaylistResponse": map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"data": map[string]interface{}{
+							"type":  "array",
+							"items": map[string]interface{}{"$ref": "#/components/schemas/Playlist"},
+						},
+						"page": map[string]interface{}{
+							"type":        "integer",
+							"description": "Current page number",
+						},
+						"limit": map[string]interface{}{
+							"type":        "integer",
+							"description": "Items per page",
+						},
+						"total": map[string]interface{}{
+							"type":        "integer",
+							"description": "Total number of items",
+						},
+						"has_more": map[string]interface{}{
+							"type":        "boolean",
+							"description": "Whether there are more pages",
+						},
+					},
+				},
+				"PaginatedVideoResponse": map[string]interface{}{
+					"type": "object",
+					"properties": map[string]interface{}{
+						"data": map[string]interface{}{
+							"type":  "array",
+							"items": map[string]interface{}{"$ref": "#/components/schemas/Video"},
 						},
 						"page": map[string]interface{}{
 							"type":        "integer",

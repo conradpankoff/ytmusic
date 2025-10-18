@@ -276,11 +276,12 @@ func CreateSchema(service *api.Service) (graphql.Schema, error) {
 					var total int
 					var err error
 					
+					searchQuery := ""
 					if hasSearch && search != "" {
-						channels, total, err = service.SearchChannels(params.Context, search, page, limit)
-					} else {
-						channels, total, err = service.GetChannels(params.Context, page, limit)
+						searchQuery = search
 					}
+					
+					channels, total, err = service.GetChannels(params.Context, page, limit, searchQuery)
 					
 					if err != nil {
 						return nil, err
@@ -337,10 +338,15 @@ func CreateSchema(service *api.Service) (graphql.Schema, error) {
 						Type: graphql.Int,
 						Description: "Filter by channel ID",
 					},
+					"search": &graphql.ArgumentConfig{
+						Type: graphql.String,
+						Description: "Search query for playlist titles",
+					},
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					page := params.Args["page"].(int)
 					limit := params.Args["limit"].(int)
+					search, hasSearch := params.Args["search"].(string)
 					
 					if limit > 1000 {
 						limit = 1000
@@ -352,7 +358,12 @@ func CreateSchema(service *api.Service) (graphql.Schema, error) {
 						channelID = &id
 					}
 					
-					playlists, total, err := service.GetPlaylists(params.Context, page, limit, channelID)
+					searchQuery := ""
+					if hasSearch && search != "" {
+						searchQuery = search
+					}
+					
+					playlists, total, err := service.GetPlaylists(params.Context, page, limit, channelID, searchQuery)
 					if err != nil {
 						return nil, err
 					}
@@ -412,10 +423,15 @@ func CreateSchema(service *api.Service) (graphql.Schema, error) {
 						Type: graphql.Int,
 						Description: "Filter by playlist ID",
 					},
+					"search": &graphql.ArgumentConfig{
+						Type: graphql.String,
+						Description: "Search query for video titles and descriptions",
+					},
 				},
 				Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 					page := params.Args["page"].(int)
 					limit := params.Args["limit"].(int)
+					search, hasSearch := params.Args["search"].(string)
 					
 					if limit > 1000 {
 						limit = 1000
@@ -433,7 +449,12 @@ func CreateSchema(service *api.Service) (graphql.Schema, error) {
 						playlistID = &id
 					}
 					
-					videos, total, err := service.GetVideos(params.Context, page, limit, channelID, playlistID)
+					searchQuery := ""
+					if hasSearch && search != "" {
+						searchQuery = search
+					}
+					
+					videos, total, err := service.GetVideos(params.Context, page, limit, channelID, playlistID, searchQuery)
 					if err != nil {
 						return nil, err
 					}

@@ -29,15 +29,8 @@ func (h *Handler) GetChannels(w http.ResponseWriter, r *http.Request) {
 	
 	// Check for search query
 	query := r.URL.Query().Get("q")
-	var channels []api.APIChannel
-	var total int
 	
-	if query != "" {
-		channels, total, err = h.service.SearchChannels(r.Context(), query, page, limit)
-	} else {
-		channels, total, err = h.service.GetChannels(r.Context(), page, limit)
-	}
-	
+	channels, total, err := h.service.GetChannels(r.Context(), page, limit, query)
 	if err != nil {
 		api.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to get channels", err.Error())
 		return
@@ -104,7 +97,10 @@ func (h *Handler) GetPlaylists(w http.ResponseWriter, r *http.Request) {
 		channelID = &id
 	}
 	
-	playlists, total, err := h.service.GetPlaylists(r.Context(), page, limit, channelID)
+	// Check for search query
+	query := r.URL.Query().Get("q")
+	
+	playlists, total, err := h.service.GetPlaylists(r.Context(), page, limit, channelID, query)
 	if err != nil {
 		api.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to get playlists", err.Error())
 		return
@@ -181,7 +177,10 @@ func (h *Handler) GetVideos(w http.ResponseWriter, r *http.Request) {
 		playlistID = &id
 	}
 	
-	videos, total, err := h.service.GetVideos(r.Context(), page, limit, channelID, playlistID)
+	// Check for search query
+	query := r.URL.Query().Get("q")
+	
+	videos, total, err := h.service.GetVideos(r.Context(), page, limit, channelID, playlistID, query)
 	if err != nil {
 		api.WriteErrorResponse(w, http.StatusInternalServerError, "Failed to get videos", err.Error())
 		return

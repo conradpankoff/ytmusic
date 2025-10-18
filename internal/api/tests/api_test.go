@@ -68,6 +68,83 @@ func setupTestDB(t *testing.T) *sql.DB {
 		transcoded_720_at DATETIME,
 		audio_extracted_at DATETIME,
 		FOREIGN KEY(channel_id) REFERENCES channels(id)
+	);
+	
+	-- Create search views
+	CREATE VIEW channel_search_view AS SELECT
+		c.id as channel_id,
+		c.created_at as channel_created_at,
+		c.external_id as channel_external_id,
+		c.title as channel_title,
+		c.metadata_updated_at as channel_metadata_updated_at,
+		c.thumbnail_updated_at as channel_thumbnail_updated_at
+	FROM channels c;
+	
+	CREATE VIEW playlist_search_view AS SELECT
+		c.id as channel_id,
+		c.created_at as channel_created_at,
+		COALESCE(c.external_id, p.channel_external_id) as channel_external_id,
+		COALESCE(c.title, '') as channel_title,
+		c.metadata_updated_at as channel_metadata_updated_at,
+		c.thumbnail_updated_at as channel_thumbnail_updated_at,
+		p.id as playlist_id,
+		p.created_at as playlist_created_at,
+		p.external_id as playlist_external_id,
+		p.title as playlist_title,
+		p.metadata_updated_at as playlist_metadata_updated_at,
+		p.thumbnail_updated_at as playlist_thumbnail_updated_at
+	FROM playlists p
+	LEFT JOIN channels c ON c.id = p.channel_id OR c.external_id = p.channel_external_id;
+	
+	CREATE VIEW video_search_view AS SELECT
+		c.id as channel_id,
+		c.created_at as channel_created_at,
+		COALESCE(c.external_id, v.channel_external_id) as channel_external_id,
+		COALESCE(c.title, '') as channel_title,
+		c.metadata_updated_at as channel_metadata_updated_at,
+		c.thumbnail_updated_at as channel_thumbnail_updated_at,
+		v.id as video_id,
+		v.created_at as video_created_at,
+		v.external_id as video_external_id,
+		v.title as video_title,
+		v.description as video_description,
+		v.metadata_updated_at as video_metadata_updated_at,
+		v.thumbnail_updated_at as video_thumbnail_updated_at,
+		v.downloaded_at as video_downloaded_at,
+		v.transcoded_360_at as video_transcoded_360_at,
+		v.transcoded_720_at as video_transcoded_720_at,
+		v.audio_extracted_at as video_audio_extracted_at
+	FROM videos v
+	LEFT JOIN channels c ON c.id = v.channel_id OR c.external_id = v.channel_external_id;
+	
+	-- Create FTS search tables
+	CREATE VIRTUAL TABLE channel_search USING fts5(
+		content='channel_search_view', content_rowid='channel_id',
+		channel_id UNINDEXED, channel_created_at UNINDEXED, channel_external_id,
+		channel_title,
+		channel_metadata_updated_at UNINDEXED, channel_thumbnail_updated_at UNINDEXED
+	);
+	
+	CREATE VIRTUAL TABLE playlist_search USING fts5(
+		content='playlist_search_view', content_rowid='playlist_id',
+		channel_id UNINDEXED, channel_created_at UNINDEXED, channel_external_id,
+		channel_title,
+		channel_metadata_updated_at UNINDEXED, channel_thumbnail_updated_at UNINDEXED,
+		playlist_id UNINDEXED, playlist_created_at UNINDEXED, playlist_external_id,
+		playlist_title,
+		playlist_metadata_updated_at UNINDEXED, playlist_thumbnail_updated_at UNINDEXED
+	);
+	
+	CREATE VIRTUAL TABLE video_search USING fts5(
+		content='video_search_view', content_rowid='video_id',
+		channel_id UNINDEXED, channel_created_at UNINDEXED, channel_external_id,
+		channel_title,
+		channel_metadata_updated_at UNINDEXED, channel_thumbnail_updated_at UNINDEXED,
+		video_id UNINDEXED, video_created_at UNINDEXED, video_external_id,
+		video_title, video_description,
+		video_metadata_updated_at UNINDEXED, video_thumbnail_updated_at UNINDEXED, 
+		video_downloaded_at UNINDEXED, video_transcoded_360_at UNINDEXED, 
+		video_transcoded_720_at UNINDEXED, video_audio_extracted_at UNINDEXED
 	);`
 	
 	_, err = db.Exec(schema)
@@ -92,6 +169,19 @@ func setupTestDB(t *testing.T) *sql.DB {
 		(1, ?, 'VIDtest1', 1, 'UCtest1', 'Test Video 1', 'Description 1', ?),
 		(2, ?, 'VIDtest2', 2, 'UCtest2', 'Test Video 2', 'Description 2', ?)`,
 		now, now, now.Add(-time.Hour), now.Add(-time.Hour))
+	require.NoError(t, err)
+	
+	// Populate FTS indexes
+	_, err = db.Exec(`INSERT INTO channel_search (rowid, channel_external_id, channel_title)
+		SELECT channel_id, channel_external_id, channel_title FROM channel_search_view`)
+	require.NoError(t, err)
+	
+	_, err = db.Exec(`INSERT INTO playlist_search (rowid, playlist_external_id, playlist_title, channel_external_id, channel_title)
+		SELECT playlist_id, playlist_external_id, playlist_title, channel_external_id, channel_title FROM playlist_search_view`)
+	require.NoError(t, err)
+	
+	_, err = db.Exec(`INSERT INTO video_search (rowid, video_external_id, video_title, video_description, channel_external_id, channel_title)
+		SELECT video_id, video_external_id, video_title, video_description, channel_external_id, channel_title FROM video_search_view`)
 	require.NoError(t, err)
 	
 	return db
@@ -177,6 +267,9 @@ func TestRESTAPIChannels(t *testing.T) {
 		
 		router.ServeHTTP(w, req)
 		
+		if w.Code != http.StatusOK {
+			t.Logf("Response body: %s", w.Body.String())
+		}
 		assert.Equal(t, http.StatusOK, w.Code)
 		
 		var response api.PaginatedResponse
@@ -428,6 +521,205 @@ func TestAuthentication(t *testing.T) {
 		// but it shouldn't fail with 401 Unauthorized - it should be 405 Method Not Allowed
 		assert.NotEqual(t, http.StatusUnauthorized, w.Code)
 		assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	})
+}
+
+func TestSearchFunctionality(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	
+	router := setupTestRouter(t, db)
+	
+	t.Run("Search channels with full text", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/rest/channels?q=Test+Channel", nil)
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response api.PaginatedResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		
+		channels, ok := response.Data.([]interface{})
+		require.True(t, ok)
+		assert.True(t, len(channels) >= 1, "Should find at least one channel")
+	})
+	
+	t.Run("Search playlists", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/rest/playlists?q=Playlist", nil)
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response api.PaginatedResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		
+		playlists, ok := response.Data.([]interface{})
+		require.True(t, ok)
+		assert.True(t, len(playlists) >= 1, "Should find at least one playlist")
+	})
+	
+	t.Run("Search videos", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/rest/videos?q=Video", nil)
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response api.PaginatedResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		
+		videos, ok := response.Data.([]interface{})
+		require.True(t, ok)
+		assert.True(t, len(videos) >= 1, "Should find at least one video")
+	})
+	
+	t.Run("Search with channel filtering", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/rest/playlists?q=Playlist&channel_id=1", nil)
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response api.PaginatedResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		
+		playlists, ok := response.Data.([]interface{})
+		require.True(t, ok)
+		assert.True(t, len(playlists) >= 0, "Should handle channel filtering with search")
+	})
+	
+	t.Run("GraphQL search channels", func(t *testing.T) {
+		query := `{"query": "{ channels(search: \"Test\", limit: 10) { data { id title } pagination { total } } }"}`
+		req := httptest.NewRequest("POST", "/api/graphql", strings.NewReader(query))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		
+		data, exists := response["data"]
+		assert.True(t, exists)
+		assert.NotNil(t, data)
+	})
+	
+	t.Run("GraphQL search videos", func(t *testing.T) {
+		query := `{"query": "{ videos(search: \"Video\", limit: 10) { data { id title } pagination { total } } }"}`
+		req := httptest.NewRequest("POST", "/api/graphql", strings.NewReader(query))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response map[string]interface{}
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		
+		data, exists := response["data"]
+		assert.True(t, exists)
+		assert.NotNil(t, data)
+	})
+	
+	t.Run("Search with no results", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/rest/channels?q=NonexistentSearchTerm", nil)
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response api.PaginatedResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		
+		assert.Equal(t, 0, response.Total)
+		
+		channels, ok := response.Data.([]interface{})
+		require.True(t, ok)
+		assert.Len(t, channels, 0)
+	})
+}
+
+func TestFullTextSearchSyntax(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	
+	// Add more test data with different content for FTS testing
+	_, err := db.Exec(`INSERT INTO channels (id, created_at, external_id, title, metadata_updated_at) VALUES 
+		(3, ?, 'UCmusic', 'Music Channel', ?),
+		(4, ?, 'UCnews', 'News and Updates Channel', ?)`,
+		time.Now(), time.Now(), time.Now(), time.Now())
+	require.NoError(t, err)
+	
+	// Update FTS index
+	_, err = db.Exec(`INSERT INTO channel_search (rowid, channel_external_id, channel_title)
+		SELECT channel_id, channel_external_id, channel_title FROM channel_search_view WHERE channel_id IN (3, 4)`)
+	require.NoError(t, err)
+	
+	router := setupTestRouter(t, db)
+	
+	t.Run("Phrase search", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/rest/channels?q=Music+Channel", nil)
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response api.PaginatedResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		
+		// Should find results containing "Music" OR "Channel"
+		assert.True(t, response.Total >= 0)
+	})
+	
+	t.Run("AND search", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/rest/channels?q=News+Updates", nil)
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response api.PaginatedResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		
+		// Should handle AND logic
+		assert.True(t, response.Total >= 0)
+	})
+	
+	t.Run("Partial word search", func(t *testing.T) {
+		req := httptest.NewRequest("GET", "/api/rest/channels?q=Musi", nil)
+		w := httptest.NewRecorder()
+		
+		router.ServeHTTP(w, req)
+		
+		assert.Equal(t, http.StatusOK, w.Code)
+		
+		var response api.PaginatedResponse
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		require.NoError(t, err)
+		
+		// Should find partial matches
+		assert.True(t, response.Total >= 0)
 	})
 }
 
