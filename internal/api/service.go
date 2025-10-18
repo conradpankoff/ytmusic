@@ -45,8 +45,7 @@ func (s *Service) GetChannels(ctx context.Context, page, limit int, search strin
 	}
 	
 	// Get total count
-	var total int
-	err = s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM channels").Scan(&total)
+	total, err := qsorm.CountWhere(ctx, s.db, &models.Channel{}, nil)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get channel count: %w", err)
 	}
@@ -103,15 +102,12 @@ func (s *Service) GetPlaylists(ctx context.Context, page, limit int, channelID *
 	}
 	
 	// Get total count
-	var total int
-	var countQuery string
+	var countCondition sb.AsExpr
 	if channelID != nil {
-		countQuery = "SELECT COUNT(*) FROM playlists WHERE channel_id = ?"
-		err = s.db.QueryRowContext(ctx, countQuery, *channelID).Scan(&total)
-	} else {
-		countQuery = "SELECT COUNT(*) FROM playlists"
-		err = s.db.QueryRowContext(ctx, countQuery).Scan(&total)
+		countCondition = sb.BinaryOperator("=", models.PlaylistTable.C("ChannelID"), sb.Bind(*channelID))
 	}
+	
+	total, err := qsorm.CountWhere(ctx, s.db, &models.Playlist{}, countCondition)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get playlist count: %w", err)
 	}
@@ -177,13 +173,13 @@ func (s *Service) GetVideos(ctx context.Context, page, limit int, channelID, pla
 		return nil, 0, fmt.Errorf("failed to get videos: %w", err)
 	}
 	
-	// Get total count using sqlbuilder
-	var total int
+	// Get total count using qsorm.CountWhere
+	var countCondition sb.AsExpr
 	if channelID != nil {
-		err = s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM videos WHERE channel_id = ?", *channelID).Scan(&total)
-	} else {
-		err = s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM videos").Scan(&total)
+		countCondition = sb.BinaryOperator("=", models.VideoTable.C("ChannelID"), sb.Bind(*channelID))
 	}
+	
+	total, err := qsorm.CountWhere(ctx, s.db, &models.Video{}, countCondition)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get video count: %w", err)
 	}
@@ -290,8 +286,8 @@ func (s *Service) SearchChannels(ctx context.Context, query string, page, limit 
 	}
 	
 	// Get total count
-	var total int
-	err = s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM channel_search WHERE channel_search MATCH ?", query).Scan(&total)
+	condition = sb.BinaryOperator("match", sb.Literal("channel_search"), sb.Bind(query))
+	total, err := qsorm.CountWhere(ctx, s.db, &models.ChannelSearch{}, condition)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get search channel count: %w", err)
 	}
@@ -331,9 +327,8 @@ func (s *Service) searchChannelsBasic(ctx context.Context, query string, page, l
 		return nil, 0, fmt.Errorf("failed to search channels: %w", err)
 	}
 	
-	// Get total count
-	var total int
-	err = s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM channels WHERE title LIKE ?", "%"+query+"%").Scan(&total)
+	// Get total count - reuse the same condition
+	total, err := qsorm.CountWhere(ctx, s.db, &models.Channel{}, condition)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get search channel count: %w", err)
 	}
@@ -375,17 +370,16 @@ func (s *Service) SearchPlaylists(ctx context.Context, query string, page, limit
 	}
 	
 	// Get total count
-	var total int
-	var countQuery string
-	var args []interface{}
+	var countCondition sb.AsExpr
+	countCondition = sb.BinaryOperator("match", sb.Literal("playlist_search"), sb.Bind(query))
+	
+	// Add channel filtering if specified
 	if channelID != nil {
-		countQuery = "SELECT COUNT(*) FROM playlist_search WHERE playlist_search MATCH ? AND channel_id = ?"
-		args = []interface{}{query, *channelID}
-	} else {
-		countQuery = "SELECT COUNT(*) FROM playlist_search WHERE playlist_search MATCH ?"
-		args = []interface{}{query}
+		channelCondition := sb.BinaryOperator("=", models.PlaylistSearchTable.C("ChannelID"), sb.Bind(*channelID))
+		countCondition = sb.BinaryOperator("and", countCondition, channelCondition)
 	}
-	err = s.db.QueryRowContext(ctx, countQuery, args...).Scan(&total)
+	
+	total, err := qsorm.CountWhere(ctx, s.db, &models.PlaylistSearch{}, countCondition)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get search playlist count: %w", err)
 	}
@@ -435,17 +429,16 @@ func (s *Service) searchPlaylistsBasic(ctx context.Context, query string, page, 
 	}
 	
 	// Get total count
-	var total int
-	var countQuery string
-	var args []interface{}
+	var countCondition sb.AsExpr
+	countCondition = sb.BinaryOperator("LIKE", models.PlaylistTable.C("Title"), sb.Bind("%"+query+"%"))
+	
+	// Add channel filtering if specified
 	if channelID != nil {
-		countQuery = "SELECT COUNT(*) FROM playlists WHERE title LIKE ? AND channel_id = ?"
-		args = []interface{}{"%"+query+"%", *channelID}
-	} else {
-		countQuery = "SELECT COUNT(*) FROM playlists WHERE title LIKE ?"
-		args = []interface{}{"%"+query+"%"}
+		channelCondition := sb.BinaryOperator("=", models.PlaylistTable.C("ChannelID"), sb.Bind(*channelID))
+		countCondition = sb.BinaryOperator("and", countCondition, channelCondition)
 	}
-	err = s.db.QueryRowContext(ctx, countQuery, args...).Scan(&total)
+	
+	total, err := qsorm.CountWhere(ctx, s.db, &models.Playlist{}, countCondition)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get search playlist count: %w", err)
 	}
@@ -494,17 +487,16 @@ func (s *Service) SearchVideos(ctx context.Context, query string, page, limit in
 	}
 	
 	// Get total count
-	var total int
-	var countQuery string
-	var args []interface{}
+	var countCondition sb.AsExpr
+	countCondition = sb.BinaryOperator("match", sb.Literal("video_search"), sb.Bind(query))
+	
+	// Add channel filtering if specified
 	if channelID != nil {
-		countQuery = "SELECT COUNT(*) FROM video_search WHERE video_search MATCH ? AND channel_id = ?"
-		args = []interface{}{query, *channelID}
-	} else {
-		countQuery = "SELECT COUNT(*) FROM video_search WHERE video_search MATCH ?"
-		args = []interface{}{query}
+		channelCondition := sb.BinaryOperator("=", models.VideoSearchTable.C("ChannelID"), sb.Bind(*channelID))
+		countCondition = sb.BinaryOperator("and", countCondition, channelCondition)
 	}
-	err = s.db.QueryRowContext(ctx, countQuery, args...).Scan(&total)
+	
+	total, err := qsorm.CountWhere(ctx, s.db, &models.VideoSearch{}, countCondition)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get search video count: %w", err)
 	}
@@ -565,18 +557,10 @@ func (s *Service) searchVideosBasic(ctx context.Context, query string, page, lim
 		return nil, 0, fmt.Errorf("failed to search videos: %w", err)
 	}
 	
-	// Get total count
-	var total int
-	var countQuery string
-	var args []interface{}
-	if channelID != nil {
-		countQuery = "SELECT COUNT(*) FROM videos WHERE (title LIKE ? OR description LIKE ?) AND channel_id = ?"
-		args = []interface{}{"%"+query+"%", "%"+query+"%", *channelID}
-	} else {
-		countQuery = "SELECT COUNT(*) FROM videos WHERE title LIKE ? OR description LIKE ?"
-		args = []interface{}{"%"+query+"%", "%"+query+"%"}
-	}
-	err = s.db.QueryRowContext(ctx, countQuery, args...).Scan(&total)
+	// Get total count - reuse the same condition logic
+	countCondition := condition
+	
+	total, err := qsorm.CountWhere(ctx, s.db, &models.Video{}, countCondition)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get search video count: %w", err)
 	}
