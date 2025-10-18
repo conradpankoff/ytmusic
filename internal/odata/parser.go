@@ -5,6 +5,43 @@ import (
 	"strings"
 )
 
+// Operator represents an OData operator
+type Operator string
+
+const (
+	AndOperator Operator = "and"
+	OrOperator  Operator = "or"
+	EqOperator  Operator = "eq"
+	NeOperator  Operator = "ne"
+	LtOperator  Operator = "lt"
+	LeOperator  Operator = "le"
+	GtOperator  Operator = "gt"
+	GeOperator  Operator = "ge"
+)
+
+var operatorStrings = map[string]Operator{
+	"and": AndOperator,
+	"or":  OrOperator,
+	"eq":  EqOperator,
+	"ne":  NeOperator,
+	"lt":  LtOperator,
+	"le":  LeOperator,
+	"gt":  GtOperator,
+	"ge":  GeOperator,
+}
+
+// Condition represents an OData filter condition
+type Condition struct {
+	Property string
+	Operator Operator
+	Value    string
+}
+
+// Filter represents an OData filter with multiple conditions
+type Filter struct {
+	Conditions []Condition
+}
+
 func ParseFilter(filterString string) (*Filter, error) {
 	var conditions []Condition
 

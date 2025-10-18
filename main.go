@@ -28,6 +28,11 @@ import (
 	"go.etcd.io/bbolt"
 
 	"fknsrs.biz/p/ytmusic/handlers"
+	"fknsrs.biz/p/ytmusic/internal/api"
+	"fknsrs.biz/p/ytmusic/internal/api/graphql"
+	"fknsrs.biz/p/ytmusic/internal/api/odata"
+	"fknsrs.biz/p/ytmusic/internal/api/openapi"
+	"fknsrs.biz/p/ytmusic/internal/api/rest"
 	"fknsrs.biz/p/ytmusic/internal/config"
 	"fknsrs.biz/p/ytmusic/internal/configreader"
 	"fknsrs.biz/p/ytmusic/internal/ctxclock"
@@ -67,6 +72,11 @@ var cfg = config.Config{
 	ApplicationDataPath:  "data",
 	ApplicationMinify:    true,
 	BackgroundWorkers:    1,
+	APIEnabled:           true,
+	APIAuthEnabled:       false,
+	APIKey:               "",
+	APIUsername:          "",
+	APIPassword:          "",
 }
 
 //go:embed templates
@@ -504,6 +514,38 @@ func runApplicationWorker(ctx context.Context, addr string) error {
 	}
 
 	m.Methods(http.MethodGet).PathPrefix("/data/").Handler(http.StripPrefix("/data/", http.FileServer(http.Dir(ctxconfig.GetConfig(ctx).ApplicationDataPath))))
+
+	// Register API routes if enabled
+	if cfg.APIEnabled {
+		l.Info("registering API routes")
+		
+		service := api.NewService(ctxdb.GetDB(ctx))
+		authConfig := api.AuthConfig{
+			Enabled:  cfg.APIAuthEnabled,
+			APIKey:   cfg.APIKey,
+			Username: cfg.APIUsername,
+			Password: cfg.APIPassword,
+		}
+		
+		// Register REST API
+		rest.RegisterRoutes(m, service, authConfig)
+		l.Info("registered REST API routes")
+		
+		// Register GraphQL API
+		if err := graphql.RegisterRoutes(m, service, authConfig); err != nil {
+			l.WithError(err).Error("failed to register GraphQL routes")
+		} else {
+			l.Info("registered GraphQL API routes")
+		}
+		
+		// Register OData API
+		odata.RegisterRoutes(m, service, authConfig)
+		l.Info("registered OData API routes")
+		
+		// Register OpenAPI documentation
+		openapi.RegisterRoutes(m)
+		l.Info("registered OpenAPI documentation routes")
+	}
 
 	min := minify.New()
 	min.Add("text/html", html.DefaultMinifier)

@@ -120,6 +120,11 @@ type Config struct {
 	ApplicationDataPath  string       `name:"application_data_path" toml:"application_data_path" yaml:"application_data_path" help:"Location for downloaded and converted media."`
 	ApplicationMinify    bool         `name:"application_minify" toml:"application_minify" yaml:"application_minify" help:"Minify HTML/CSS/JS output."`
 	BackgroundWorkers    int          `name:"background_workers" toml:"background_workers" yaml:"background_workers" help:"How many background workers to run."`
+	APIEnabled           bool         `name:"api_enabled" toml:"api_enabled" yaml:"api_enabled" help:"Enable API endpoints."`
+	APIAuthEnabled       bool         `name:"api_auth_enabled" toml:"api_auth_enabled" yaml:"api_auth_enabled" help:"Enable API authentication."`
+	APIKey               string       `name:"api_key" toml:"api_key" yaml:"api_key" help:"API key for authentication."`
+	APIUsername          string       `name:"api_username" toml:"api_username" yaml:"api_username" help:"API username for basic authentication."`
+	APIPassword          string       `name:"api_password" toml:"api_password" yaml:"api_password" help:"API password for basic authentication."`
 }
 
 func (c Config) DataFile(section, name string) string {
