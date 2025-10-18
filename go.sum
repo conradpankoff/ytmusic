@@ -1,10 +1,3 @@
-fknsrs.biz/p/reflectutil v0.0.3 h1:esij6tNEMCODlScjCYFp4PBtXXvL5jB5RgQGOLXHzEI=
-fknsrs.biz/p/reflectutil v0.0.3/go.mod h1:T4IkEyPUFzpaRuKLYziXfsxlywqlAi+EHqMB6qEGFbE=
-fknsrs.biz/p/sorm v1.5.0 h1:mNK+4jHz7QtGZoCjlaPenyRhlroM0ddQN57krgsxHaQ=
-fknsrs.biz/p/sorm v1.5.0/go.mod h1:nsAI0oPf8xlJKwoIcZrJVm3EW+ALXgtDP8G8vna8DgY=
-fknsrs.biz/p/sqlbuilder v1.0.0/go.mod h1:1W+uIttQzYSFNe3oWi4fjp0j1eLHrwMIk0y/5x3R440=
-fknsrs.biz/p/sqlbuilder v1.0.1 h1:WrqPkohtVanCX2v4OwI4I+mwlfSDbYSO6xj4QiRj3sU=
-fknsrs.biz/p/sqlbuilder v1.0.1/go.mod h1:1W+uIttQzYSFNe3oWi4fjp0j1eLHrwMIk0y/5x3R440=
 github.com/DATA-DOG/go-sqlmock v1.5.0 h1:Shsta01QNfFxHCfpW6YH2STWB0MudeXXEWMr20OEh60=
 github.com/DATA-DOG/go-sqlmock v1.5.0/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/Jeffail/gabs/v2 v2.7.0 h1:Y2edYaTcE8ZpRsR2AtmPu5xQdFDIthFG0jYhu5PY8kg=
@@ -21,6 +14,12 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/deoxxa/reflectutil v0.0.3 h1:BOHhS3CuniuAYVT6/aXIKRwBHoCvs9nY/vNOdLeBmBg=
+github.com/deoxxa/reflectutil v0.0.3/go.mod h1:T4IkEyPUFzpaRuKLYziXfsxlywqlAi+EHqMB6qEGFbE=
+github.com/deoxxa/sorm v1.5.0 h1:TeB4lhygpOkxKcAfwWOa5wKAPuBbRBoGi0ur19VDOuc=
+github.com/deoxxa/sorm v1.5.0/go.mod h1:nsAI0oPf8xlJKwoIcZrJVm3EW+ALXgtDP8G8vna8DgY=
+github.com/deoxxa/sqlbuilder v1.0.1 h1:Q7/7mQlMdhPmrlBZdk+fTi6/reGtbiKNAhUw63B1KAM=
+github.com/deoxxa/sqlbuilder v1.0.1/go.mod h1:1W+uIttQzYSFNe3oWi4fjp0j1eLHrwMIk0y/5x3R440=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/fsnotify/fsnotify v1.6.0 h1:n+5WquG0fcWoWp6xPWfHdbskMCQaFnG6PfBrh1Ky4HY=

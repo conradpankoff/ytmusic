@@ -1,11 +1,11 @@
-# fknsrs.biz/p/reflectutil v0.0.3
+# fknsrs.biz/p/reflectutil v0.0.3 => github.com/deoxxa/reflectutil v0.0.3
 ## explicit; go 1.20
 fknsrs.biz/p/reflectutil
-# fknsrs.biz/p/sorm v1.5.0
+# fknsrs.biz/p/sorm v1.5.0 => github.com/deoxxa/sorm v1.5.0
 ## explicit; go 1.13
 fknsrs.biz/p/sorm
 fknsrs.biz/p/sorm/qsorm
-# fknsrs.biz/p/sqlbuilder v1.0.1
+# fknsrs.biz/p/sqlbuilder v1.0.1 => github.com/deoxxa/sqlbuilder v1.0.1
 ## explicit; go 1.13
 fknsrs.biz/p/sqlbuilder
 # github.com/Jeffail/gabs/v2 v2.7.0
@@ -93,3 +93,6 @@ golang.org/x/sys/windows
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
+# fknsrs.biz/p/reflectutil => github.com/deoxxa/reflectutil v0.0.3
+# fknsrs.biz/p/sorm => github.com/deoxxa/sorm v1.5.0
+# fknsrs.biz/p/sqlbuilder => github.com/deoxxa/sqlbuilder v1.0.1
