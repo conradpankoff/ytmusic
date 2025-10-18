@@ -163,12 +163,23 @@ func (s *Service) GetVideos(ctx context.Context, page, limit int, channelID, pla
 	var videos []models.Video
 	for rows.Next() {
 		var v models.Video
-		err := rows.Scan(&v.ID, &v.CreatedAt, &v.ExternalID, &v.ChannelID, &v.ChannelExternalID, 
-			&v.Title, &v.Description, &v.PublishDate, &v.UploadDate, &v.MetadataUpdatedAt,
+		var channelExternalID sql.NullString
+		var description sql.NullString
+		
+		err := rows.Scan(&v.ID, &v.CreatedAt, &v.ExternalID, &v.ChannelID, &channelExternalID, 
+			&v.Title, &description, &v.PublishDate, &v.UploadDate, &v.MetadataUpdatedAt,
 			&v.ThumbnailUpdatedAt, &v.DownloadedAt, &v.Transcoded360At, &v.Transcoded720At, &v.AudioExtractedAt)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan video: %w", err)
 		}
+		
+		if channelExternalID.Valid {
+			v.ChannelExternalID = channelExternalID.String
+		}
+		if description.Valid {
+			v.Description = description.String
+		}
+		
 		videos = append(videos, v)
 	}
 	
