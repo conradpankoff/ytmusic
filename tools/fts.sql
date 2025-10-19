@@ -1,3 +1,7 @@
+-- this file is not part of the application. it is a development tool used
+-- separately for quickly experimenting with and tuning the sqlite full text
+-- search functions used in the application.
+
 begin;
 
 drop trigger if exists channels__update_search_on_insert;

@@ -1,3 +1,7 @@
+-- this file is not part of the application. it is an operational tool used
+-- separately to populate job records for operations that have failed or not
+-- run for any reason.
+
 update videos set thumbnail_updated_at = null, transcoded_360_at = null, transcoded_720_at = null, audio_extracted_at = null;
 
 insert into jobs (created_at, queue_name, payload, run_after, failure_delay, attempts_remaining, error_messages, output_messages)
