@@ -4,7 +4,7 @@ ignore:
 watchers:
   - name: go build
     debounce: 5s
-    command: go build -v -o ytmusic
+    command: go build -trimpath -v -o ytmusic
     include:
       - '*.go'
       - '**/*.go'
