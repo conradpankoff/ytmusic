@@ -511,7 +511,13 @@ func runApplicationWorker(ctx context.Context, addr string) error {
 	min.Add("application/javascript", js.DefaultMinifier)
 
 	n := negroni.New()
-	n.Use(negroni.NewRecovery())
+	n.Use(&negroni.Recovery{
+		Logger:     l,
+		PrintStack: true,
+		LogStack:   true,
+		StackSize:  1024 * 64,
+		Formatter:  &negroni.TextPanicFormatter{},
+	})
 	n.UseFunc(ctxlogger.Register(l))
 	n.UseFunc(ctxtimer.Register(nil))
 	n.UseFunc(ctxclock.Register(ctxclock.GetClock(ctx)))
