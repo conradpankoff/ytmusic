@@ -2,7 +2,7 @@
 
 pragma trusted_schema=1;
 
--- job queue
+-- begin: job queue
 
 create table jobs (
   id                 integer not null primary key,
@@ -20,7 +20,9 @@ create table jobs (
   output_messages    text not null
 );
 
--- main data models
+-- end: job queue
+
+-- begin: main data model
 
 create table channels (
   id                   integer not null primary key,
@@ -72,7 +74,9 @@ create table playlist_videos (
   position             integer not null
 );
 
--- copy ids to remote objects on insert
+-- end: main data model
+
+-- begin: asynchronous relation maintenance triggers
 
 create trigger channels__propagate_id_after_insert after insert on channels
 begin
@@ -90,7 +94,9 @@ begin
   update playlist_videos set video_id = new.id where video_external_id = new.external_id;
 end;
 
--- views for search/list pages
+-- end: asynchronous relation maintenance triggers
+
+-- begin: view definitions
 
 create view channel_search_view as select
   c.id as channel_id,
@@ -175,7 +181,9 @@ left join videos v
 left join channels c
   on c.id = v.channel_id or c.external_id = v.channel_external_id;
 
--- indexes for search pages
+-- end: view definitions
+
+-- begin: index definitions
 
 create virtual table channel_search using fts5(
   content='channel_search_view', content_rowid='channel_id',
@@ -204,7 +212,9 @@ create virtual table video_search using fts5(
   video_metadata_updated_at unindexed, video_thumbnail_updated_at unindexed, video_downloaded_at unindexed, video_transcoded_360_at unindexed, video_transcoded_720_at unindexed, video_audio_extracted_at unindexed
 );
 
--- keep the search indexes updated when the source data changes
+-- end: index definitions
+
+-- begin: index triggers
 
 create trigger channels__update_search_on_insert after insert on channels
 begin
@@ -282,3 +292,29 @@ create trigger videos__update_search_on_delete after delete on videos
 begin
   insert into video_search (video_search, rowid) values ('delete', old.id);
 end;
+
+-- end: index triggers
+
+-- begin: index population
+
+insert into channel_search (rowid, channel_external_id, channel_title)
+  select
+    channel_id,
+    channel_external_id, channel_title
+  from channel_search_view;
+
+insert into playlist_search (rowid, playlist_external_id, playlist_title, channel_external_id, channel_title)
+  select
+    playlist_id,
+    playlist_external_id, playlist_title,
+    channel_external_id, channel_title
+  from playlist_search_view;
+
+insert into video_search (rowid, video_external_id, video_title, video_description, channel_external_id, channel_title)
+  select
+    video_id,
+    video_external_id, video_title, video_description,
+    channel_external_id, channel_title
+  from video_search_view;
+
+-- end: index population
