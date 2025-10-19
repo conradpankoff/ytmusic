@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"time"
 
 	"fknsrs.biz/p/ytmusic/internal/sqlbuilderutil"
@@ -18,17 +19,17 @@ type Video struct {
 	ID                int `sql:",table:videos"`
 	CreatedAt         time.Time
 	ExternalID        string
-	ChannelID         *int
+	ChannelID         sql.NullInt32
 	ChannelExternalID string
 	Title             string
 	Description       string
-	PublishDate       *time.Time
-	UploadDate        *time.Time
+	PublishDate       sql.NullTime
+	UploadDate        sql.NullTime
 
-	MetadataUpdatedAt  *time.Time
-	ThumbnailUpdatedAt *time.Time
-	DownloadedAt       *time.Time
-	Transcoded360At    *time.Time `sql:"transcoded_360_at"`
-	Transcoded720At    *time.Time `sql:"transcoded_720_at"`
-	AudioExtractedAt   *time.Time
+	MetadataUpdatedAt  sql.NullTime
+	ThumbnailUpdatedAt sql.NullTime
+	DownloadedAt       sql.NullTime
+	Transcoded360At    sql.NullTime `sql:"transcoded_360_at"`
+	Transcoded720At    sql.NullTime `sql:"transcoded_720_at"`
+	AudioExtractedAt   sql.NullTime
 }

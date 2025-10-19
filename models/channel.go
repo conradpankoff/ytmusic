@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"time"
 
 	"fknsrs.biz/p/ytmusic/internal/sqlbuilderutil"
@@ -20,8 +21,8 @@ type Channel struct {
 	ExternalID string
 	Title      string
 
-	MetadataUpdatedAt  *time.Time
-	ThumbnailUpdatedAt *time.Time
-	PlaylistsUpdatedAt *time.Time
-	VideosUpdatedAt    *time.Time
+	MetadataUpdatedAt  sql.NullTime
+	ThumbnailUpdatedAt sql.NullTime
+	PlaylistsUpdatedAt sql.NullTime
+	VideosUpdatedAt    sql.NullTime
 }

@@ -15,7 +15,7 @@ import (
 // JobUpdate represents a job progress update for SSE
 type JobUpdate struct {
 	ID       int    `json:"id"`
-	Progress *int   `json:"progress"`
+	Progress *int32 `json:"progress"`
 	Status   string `json:"status"`
 }
 
@@ -27,7 +27,7 @@ func JobsSSE(rw http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	lastProgress := make(map[int]*int)
+	lastProgress := make(map[int]*int32)
 	lastStatus := make(map[int]string)
 
 	ticker := time.NewTicker(2 * time.Second)
@@ -45,9 +45,9 @@ func JobsSSE(rw http.ResponseWriter, r *http.Request) {
 
 			for _, job := range jobs {
 				var status string
-				if job.FinishedAt != nil {
+				if job.FinishedAt.Valid {
 					status = "finished"
-				} else if job.ReservedAt != nil {
+				} else if job.ReservedAt.Valid {
 					status = "running"
 				} else {
 					status = "pending"
@@ -57,11 +57,11 @@ func JobsSSE(rw http.ResponseWriter, r *http.Request) {
 
 				if v, exists := lastProgress[job.ID]; !exists {
 					changed = true
-				} else if job.Progress == nil && v != nil {
+				} else if !job.Progress.Valid && v != nil {
 					changed = true
-				} else if job.Progress != nil && v == nil {
+				} else if job.Progress.Valid && v == nil {
 					changed = true
-				} else if job.Progress != nil && v != nil && *job.Progress != *v {
+				} else if job.Progress.Valid && v != nil && job.Progress.Int32 != *v {
 					changed = true
 				}
 
@@ -72,9 +72,13 @@ func JobsSSE(rw http.ResponseWriter, r *http.Request) {
 				}
 
 				if changed {
+					var progress *int32
+					if job.Progress.Valid {
+						progress = &job.Progress.Int32
+					}
 					update := JobUpdate{
 						ID:       job.ID,
-						Progress: job.Progress,
+						Progress: progress,
 						Status:   status,
 					}
 
@@ -88,7 +92,7 @@ func JobsSSE(rw http.ResponseWriter, r *http.Request) {
 						f.Flush()
 					}
 
-					lastProgress[job.ID] = job.Progress
+					lastProgress[job.ID] = progress
 					lastStatus[job.ID] = status
 				}
 			}

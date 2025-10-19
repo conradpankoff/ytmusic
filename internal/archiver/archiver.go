@@ -15,7 +15,7 @@ func VideoSearchZipAudio(ctx context.Context, wr io.Writer, videos []models.Vide
 	zw := zip.NewWriter(wr)
 
 	for _, video := range videos {
-		if video.VideoAudioExtractedAt == nil {
+		if !video.VideoAudioExtractedAt.Valid {
 			continue
 		}
 
@@ -45,7 +45,7 @@ func VideoInPlaylistZipAudio(ctx context.Context, wr io.Writer, videos []models.
 	zw := zip.NewWriter(wr)
 
 	for _, video := range videos {
-		if video.VideoAudioExtractedAt == nil {
+		if !video.VideoAudioExtractedAt.Valid {
 			continue
 		}
 

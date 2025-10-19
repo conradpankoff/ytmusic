@@ -47,12 +47,12 @@ type Job struct {
 	QueueName         string
 	Payload           string
 	RunAfter          time.Time
-	FailureDelay      time.Duration
+	FailureDelay      int64
 	AttemptsRemaining int
-	ReservedAt        *time.Time
-	ReservedUntil     *time.Time
-	FinishedAt        *time.Time
-	Progress          *int // Progress percentage (0-100) for long-running jobs
+	ReservedAt        sql.NullTime
+	ReservedUntil     sql.NullTime
+	FinishedAt        sql.NullTime
+	Progress          sql.NullInt32 // Progress percentage (0-100) for long-running jobs
 	ErrorMessages     sqltypes.JSONStringSlice
 	OutputMessages    sqltypes.JSONStringSlice
 }
@@ -88,10 +88,10 @@ func findNext(ctx context.Context, db sorm.Querier, queueNames []string, now tim
 }
 
 func reserve(ctx context.Context, tx *sql.Tx, job *Job, now time.Time, reserveDuration time.Duration) error {
-	if job.ReservedUntil != nil && job.ReservedUntil.After(now) {
+	if job.ReservedUntil.Valid && job.ReservedUntil.Time.After(now) {
 		return fmt.Errorf("jobqueue.reserve: can't reserve a job with a non-expired reservation")
 	}
-	if job.FinishedAt != nil {
+	if job.FinishedAt.Valid {
 		return fmt.Errorf("jobqueue.reserve: can't reserve a job that has already finished")
 	}
 
@@ -100,9 +100,9 @@ func reserve(ctx context.Context, tx *sql.Tx, job *Job, now time.Time, reserveDu
 	}
 
 	reservedUntil := now.Add(reserveDuration)
-	job.ReservedAt = &now
-	job.ReservedUntil = &reservedUntil
-	job.Progress = nil
+	job.ReservedAt = sql.NullTime{Time: now, Valid: true}
+	job.ReservedUntil = sql.NullTime{Time: reservedUntil, Valid: true}
+	job.Progress = sql.NullInt32{Valid: false}
 
 	if err := sorm.SaveRecord(ctx, tx, job); err != nil {
 		return fmt.Errorf("jobqueue.reserve: could not save job record: %w", err)
@@ -129,20 +129,20 @@ func findNextAndReserve(ctx context.Context, tx *sql.Tx, queueNames []string, no
 }
 
 func finish(ctx context.Context, tx *sql.Tx, job *Job, now time.Time, errorMessage, outputMessage string) error {
-	if job.FinishedAt != nil {
+	if job.FinishedAt.Valid {
 		return fmt.Errorf("jobqueue.finish: can't finish a job that has already finished")
 	}
 
-	job.FinishedAt = &now
+	job.FinishedAt = sql.NullTime{Time: now, Valid: true}
 	job.ErrorMessages = append(job.ErrorMessages, errorMessage)
 	job.OutputMessages = append(job.OutputMessages, outputMessage)
 
 	if errorMessage != "" && job.AttemptsRemaining > 0 {
 		job.AttemptsRemaining--
-		job.RunAfter = now.Add(job.FailureDelay)
-		job.ReservedAt = nil
-		job.ReservedUntil = nil
-		job.FinishedAt = nil
+		job.RunAfter = now.Add(time.Duration(job.FailureDelay))
+		job.ReservedAt = sql.NullTime{Valid: false}
+		job.ReservedUntil = sql.NullTime{Valid: false}
+		job.FinishedAt = sql.NullTime{Valid: false}
 	}
 
 	if err := sorm.SaveRecord(ctx, tx, job); err != nil {

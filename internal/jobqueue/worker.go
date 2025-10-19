@@ -95,7 +95,7 @@ func (w *Worker) Add(ctx context.Context, tx *sql.Tx, job *Job) error {
 		job.RunAfter = time.Now()
 	}
 	if job.FailureDelay == 0 {
-		job.FailureDelay = DefaultFailureDelay
+		job.FailureDelay = int64(DefaultFailureDelay)
 	}
 	if job.AttemptsRemaining == 0 {
 		job.AttemptsRemaining = 5
@@ -195,8 +195,8 @@ func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) err
 		// Update if 2 seconds have passed or progress jumped by at least 5%
 		timePassed := now.Sub(lastUpdate) >= 2*time.Second
 		var progressJump bool
-		if job.Progress != nil {
-			progressJump = progress-*job.Progress >= 5
+		if job.Progress.Valid {
+			progressJump = progress-int(job.Progress.Int32) >= 5
 		} else {
 			progressJump = true
 		}
@@ -210,6 +210,9 @@ func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) err
 	if _, err := ctxdb.GetDB(ctx).ExecContext(ctx, "update jobs set progress = $1 where id = $2", progress, job.ID); err != nil {
 		return fmt.Errorf("jobqueue.Worker.UpdateProgress: could not update job record with progress: %w", err)
 	}
+	
+	// Update the job object to reflect the change
+	job.Progress = sql.NullInt32{Int32: int32(progress), Valid: true}
 
 	// Update throttle tracker
 	w.pm.Lock()
