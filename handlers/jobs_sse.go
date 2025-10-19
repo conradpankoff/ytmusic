@@ -14,8 +14,8 @@ import (
 
 // JobUpdate represents a job progress update for SSE
 type JobUpdate struct {
-	ID       int    `json:"id"`
-	Progress *int32 `json:"progress"`
+	ID       int  `json:"id"`
+	Progress *int `json:"progress"`
 	Status   string `json:"status"`
 }
 
@@ -27,7 +27,7 @@ func JobsSSE(rw http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	lastProgress := make(map[int]*int32)
+	lastProgress := make(map[int]*int)
 	lastStatus := make(map[int]string)
 
 	ticker := time.NewTicker(2 * time.Second)
@@ -61,7 +61,7 @@ func JobsSSE(rw http.ResponseWriter, r *http.Request) {
 					changed = true
 				} else if job.Progress.Valid && v == nil {
 					changed = true
-				} else if job.Progress.Valid && v != nil && job.Progress.Int32 != *v {
+				} else if job.Progress.Valid && v != nil && int(job.Progress.Int32) != *v {
 					changed = true
 				}
 
@@ -72,9 +72,10 @@ func JobsSSE(rw http.ResponseWriter, r *http.Request) {
 				}
 
 				if changed {
-					var progress *int32
+					var progress *int
 					if job.Progress.Valid {
-						progress = &job.Progress.Int32
+						progressInt := int(job.Progress.Int32)
+						progress = &progressInt
 					}
 					update := JobUpdate{
 						ID:       job.ID,

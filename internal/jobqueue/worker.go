@@ -180,6 +180,10 @@ func (w *Worker) GetQueueNames() []string {
 }
 
 func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) error {
+	// Validate progress range to prevent int32 overflow
+	if progress < 0 || progress > 100 {
+		return fmt.Errorf("progress must be between 0 and 100, got %d", progress)
+	}
 	// Throttle progress updates to reduce database lock frequency
 	// Only update if progress increased by at least 5% or 2 seconds have passed
 	w.pm.RLock()
@@ -211,7 +215,7 @@ func (w *Worker) UpdateProgress(ctx context.Context, job *Job, progress int) err
 		return fmt.Errorf("jobqueue.Worker.UpdateProgress: could not update job record with progress: %w", err)
 	}
 	
-	// Update the job object to reflect the change
+	// Update the job object to reflect the change (safe conversion since we validated range)
 	job.Progress = sql.NullInt32{Int32: int32(progress), Valid: true}
 
 	// Update throttle tracker
