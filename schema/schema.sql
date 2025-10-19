@@ -15,7 +15,7 @@ create table jobs (
   reserved_at        timestamp,
   reserved_until     timestamp,
   finished_at        timestamp,
-  progress           integer, -- Progress percentage (0-100) for long-running jobs
+  progress           integer,
   error_messages     text not null,
   output_messages    text not null
 );
