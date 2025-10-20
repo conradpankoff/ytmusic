@@ -17,8 +17,7 @@ import (
 
 	"fknsrs.biz/p/sorm"
 	"github.com/gorilla/mux"
-	sqlite3driver "github.com/ncruces/go-sqlite3/driver"
-	_ "github.com/ncruces/go-sqlite3/embed"
+	"github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
@@ -163,7 +162,7 @@ func main() {
 
 		sql.Register(dbDriver, sqlitelogger.New(
 			dbDriver,
-			&sqlite3driver.SQLite{},
+			&sqlite3.SQLiteDriver{},
 			&sqlitelogger.BasicFilter{
 				LogSlowerThan: cfg.LogQueries.SlowerThan,
 				IgnorePackageStackFrames: []string{
