@@ -8,7 +8,6 @@ require (
 	fknsrs.biz/p/sqlbuilder v1.0.1
 	github.com/Jeffail/gabs/v2 v2.7.0
 	github.com/PuerkitoBio/goquery v1.8.1
-	github.com/bxcodec/httpcache v1.0.0-beta.3
 	github.com/gorilla/mux v1.8.0
 	github.com/gost/godata v0.0.0-20200707132251-5d9cf5efac7d
 	github.com/mattn/go-sqlite3 v1.14.17
