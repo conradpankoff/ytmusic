@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	
+	"fknsrs.biz/p/ytmusic/internal/timeutil"
 )
 
 type Value interface {
@@ -83,7 +85,7 @@ func ParsePrimitiveValue(input string) (*PrimitiveValue, error) {
 		if err != nil {
 			return nil, fmt.Errorf("odata.ParsePrimitiveValue: could not parse as single-length floating point value: %w", err)
 		}
-		return &PrimitiveValue{typeName: "Edm.Single", floatValue: float64(singleValue)}, nil
+		return &PrimitiveValue{typeName: "Edm.Single", floatValue: value}, nil
 	}
 
 	// Edm.Double
@@ -126,5 +128,25 @@ func (p *PrimitiveValue) Type() string {
 }
 
 func (p *PrimitiveValue) Bool() bool {
-	return
+	return p.boolValue
+}
+
+func (p *PrimitiveValue) String() string {
+	switch p.typeName {
+	case "Edm.Boolean":
+		return fmt.Sprintf("%t", p.boolValue)
+	case "Edm.Single", "Edm.Double":
+		return fmt.Sprintf("%f", p.floatValue)
+	case "Edm.Int32", "Edm.Int64":
+		return fmt.Sprintf("%d", p.intValue)
+	case "Edm.DateTime", "Edm.Time":
+		if p.timeValue != nil {
+			return p.timeValue.Format(time.RFC3339)
+		}
+		return ""
+	case "Edm.String", "Edm.Guid":
+		return p.stringValue
+	default:
+		return ""
+	}
 }
