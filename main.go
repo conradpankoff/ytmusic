@@ -226,7 +226,7 @@ func main() {
 	defer cacheDB.Close()
 
 	ctx = ctxhttpclient.WithHTTPClient(ctx, &http.Client{
-		Transport: httpcache.NewTransport(nil, httpcache.NewBBoltStorage(cacheDB), 0),
+		Transport: httpcache.NewTransport(nil, httpcache.NewBBoltStorage(cacheDB), time.Second*5),
 	})
 
 	ctx = ctxjobqueue.WithWorker(ctx, jobqueue.NewWorker(nil))

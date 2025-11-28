@@ -41,6 +41,15 @@ func Now(ctx context.Context) (time.Time, error) {
 	return time.Time{}, fmt.Errorf("ctxclock.Now: no clock source found in context")
 }
 
+func MustNow(ctx context.Context) time.Time {
+	t, err := Now(ctx)
+	if err != nil {
+		panic(fmt.Errorf("ctxclock.MustNow: %w", err))
+	}
+
+	return t
+}
+
 // middleware
 
 func Register(c Clock) func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {

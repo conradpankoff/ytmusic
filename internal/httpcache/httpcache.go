@@ -2,16 +2,22 @@ package httpcache
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha1"
 	"encoding/gob"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
+
+	"fknsrs.biz/p/ytmusic/internal/ctxclock"
+	"fknsrs.biz/p/ytmusic/internal/ctxlogger"
 )
 
 type cachedResponse struct {
@@ -35,8 +41,8 @@ func (r *cachedResponse) makeResponse(req *http.Request) *http.Response {
 }
 
 type Storage interface {
-	Fetch(u *url.URL) (*cachedResponse, error)
-	Save(u *url.URL, res *http.Response) (*cachedResponse, error)
+	Fetch(ctx context.Context, u *url.URL) (*cachedResponse, error)
+	Save(ctx context.Context, u *url.URL, res *http.Response) (*cachedResponse, error)
 }
 
 var bboltBucketName = []byte("cache")
@@ -55,7 +61,7 @@ func makeBBoltKey(u *url.URL) []byte {
 	return []byte(filepath.Join(u.Host, hex.EncodeToString(h.Sum(nil))))
 }
 
-func (s *BBoltStorage) Fetch(u *url.URL) (*cachedResponse, error) {
+func (s *BBoltStorage) Fetch(ctx context.Context, u *url.URL) (*cachedResponse, error) {
 	tx, err := s.db.Begin(false)
 	if err != nil {
 		return nil, err
@@ -84,14 +90,14 @@ func (s *BBoltStorage) Fetch(u *url.URL) (*cachedResponse, error) {
 	return &r, nil
 }
 
-func (s *BBoltStorage) Save(u *url.URL, res *http.Response) (*cachedResponse, error) {
+func (s *BBoltStorage) Save(ctx context.Context, u *url.URL, res *http.Response) (*cachedResponse, error) {
 	d, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	r := cachedResponse{
-		UpdatedAt:  time.Now(),
+		UpdatedAt:  ctxclock.MustNow(ctx),
 		URL:        u.String(),
 		Status:     res.Status,
 		StatusCode: res.StatusCode,
@@ -153,8 +159,29 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return t.transport.RoundTrip(req)
 	}
 
-	if cr, err := t.storage.Fetch(req.URL); err == nil && cr != nil && time.Now().Sub(cr.UpdatedAt) < t.maxAge {
-		return cr.makeResponse(req), nil
+	if cr, err := t.storage.Fetch(req.Context(), req.URL); err != nil {
+		return nil, fmt.Errorf("httpcache.Transport.RoundTrip: %w", err)
+	} else if cr == nil {
+		ctxlogger.GetLogger(req.Context()).Debug("httpcache: miss")
+	} else {
+		now := ctxclock.MustNow(req.Context())
+		earliest := now.Add(0 - t.maxAge)
+		age := now.Sub(cr.UpdatedAt)
+
+		l := ctxlogger.GetLogger(req.Context()).WithFields(logrus.Fields{
+			"httpcache.response.time_now":      now,
+			"httpcache.response.time_earliest": earliest,
+			"httpcache.response.time_updated":  cr.UpdatedAt,
+			"httpcache.response.age_max":       t.maxAge,
+			"httpcache.response.age_actual":    age,
+		})
+
+		if cr.UpdatedAt.Before(earliest) {
+			l.Debug("httpcache: stale")
+		} else {
+			l.Debug("httpcache: hit")
+			return cr.makeResponse(req), nil
+		}
 	}
 
 	res, err := t.transport.RoundTrip(req)
@@ -166,7 +193,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return res, nil
 	}
 
-	cr, err := t.storage.Save(req.URL, res)
+	cr, err := t.storage.Save(req.Context(), req.URL, res)
 	if err != nil {
 		return nil, err
 	}
