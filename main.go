@@ -527,6 +527,22 @@ func runApplicationWorker(ctx context.Context, addr string) error {
 	n.UseFunc(ctxclock.AddLoggerHooks())
 	n.UseFunc(ctxlogger.Log())
 
+	// CORS middleware to allow browser extension requests
+	n.UseFunc(func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+		// Allow requests from browser extensions
+		rw.Header().Set("Access-Control-Allow-Origin", "*")
+		rw.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		rw.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		
+		// Handle preflight requests
+		if r.Method == "OPTIONS" {
+			rw.WriteHeader(http.StatusOK)
+			return
+		}
+		
+		next(rw, r)
+	})
+
 	n.UseFunc(func(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 		next(rw, r.WithContext(ctxtemplate.WithData(r.Context(), map[string]interface{}{
 			"Messages": struct{ Error, Success, Information string }{
