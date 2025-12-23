@@ -1,6 +1,7 @@
 package models
 
 import (
+	"database/sql"
 	"time"
 
 	"fknsrs.biz/p/ytmusic/internal/sqlbuilderutil"
@@ -19,7 +20,7 @@ type PlaylistVideo struct {
 	CreatedAt          time.Time
 	PlaylistID         int
 	PlaylistExternalID string
-	VideoID            *int
+	VideoID            sql.NullInt32
 	VideoExternalID    string
 	Position           int
 }

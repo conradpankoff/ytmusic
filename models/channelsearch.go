@@ -21,8 +21,8 @@ type ChannelSearch struct {
 	ChannelCreatedAt          time.Time
 	ChannelExternalID         string
 	ChannelTitle              string
-	ChannelMetadataUpdatedAt  *time.Time
-	ChannelThumbnailUpdatedAt *time.Time
+	ChannelMetadataUpdatedAt  sql.NullTime
+	ChannelThumbnailUpdatedAt sql.NullTime
 }
 
 func (s *ChannelSearch) OverrideScan(names []string, scanners []sql.Scanner) error {
@@ -31,9 +31,9 @@ func (s *ChannelSearch) OverrideScan(names []string, scanners []sql.Scanner) err
 		case "ChannelCreatedAt":
 			scanners[i] = &sqltypes.TimeScanner{Value: &s.ChannelCreatedAt}
 		case "ChannelMetadataUpdatedAt":
-			scanners[i] = &sqltypes.TimePointerScanner{Value: &s.ChannelMetadataUpdatedAt}
+			scanners[i] = &sqltypes.NullTimeScanner{Value: &s.ChannelMetadataUpdatedAt}
 		case "ChannelThumbnailUpdatedAt":
-			scanners[i] = &sqltypes.TimePointerScanner{Value: &s.ChannelThumbnailUpdatedAt}
+			scanners[i] = &sqltypes.NullTimeScanner{Value: &s.ChannelThumbnailUpdatedAt}
 		}
 	}
 

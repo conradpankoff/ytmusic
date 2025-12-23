@@ -1,6 +1,7 @@
 package sqltypes
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
@@ -45,6 +46,28 @@ func (t *TimePointerScanner) Scan(src interface{}) error {
 		return nil
 	default:
 		return fmt.Errorf("sqltypes.TimePointerScanner: could not scan input type of %T", src)
+	}
+}
+
+type NullTimeScanner struct {
+	Value *sql.NullTime
+}
+
+func (t *NullTimeScanner) Scan(src interface{}) error {
+	switch src := src.(type) {
+	case nil:
+		t.Value.Valid = false
+		return nil
+	case string:
+		v, err := time.Parse(format, src)
+		if err != nil {
+			return fmt.Errorf("sqltypes.NullTimeScanner: could not parse input value %q: %w", src, err)
+		}
+		t.Value.Time = v
+		t.Value.Valid = true
+		return nil
+	default:
+		return fmt.Errorf("sqltypes.NullTimeScanner: could not scan input type of %T", src)
 	}
 }
 

@@ -619,12 +619,12 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 					channel.CreatedAt = time.Now()
 					channel.ExternalID = externalID
 					channel.Title = channelData.Title
-					channel.MetadataUpdatedAt = ptr.Time(time.Now())
+					channel.MetadataUpdatedAt = ptr.NullTime(time.Now())
 
 					return sorm.CreateRecord(ctx, tx, &channel)
 				} else {
 					channel.Title = channelData.Title
-					channel.MetadataUpdatedAt = ptr.Time(time.Now())
+					channel.MetadataUpdatedAt = ptr.NullTime(time.Now())
 
 					return sorm.SaveRecord(ctx, tx, &channel)
 				}
@@ -660,20 +660,20 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 							}
 
 							playlist.ExternalID = channelPlaylist.ID
-							playlist.ChannelID = &channel.ID
+							playlist.ChannelID = ptr.NullInt32FromInt(channel.ID)
 							playlist.ChannelExternalID = channel.ExternalID
 							playlist.Title = channelPlaylist.Title
-							playlist.MetadataUpdatedAt = ptr.Time(time.Now())
+							playlist.MetadataUpdatedAt = ptr.NullTime(time.Now())
 
 							if err := sorm.CreateRecord(ctx, tx, &playlist); err != nil {
 								return err
 							}
 						} else {
 							playlist.ExternalID = channelPlaylist.ID
-							playlist.ChannelID = &channel.ID
+							playlist.ChannelID = ptr.NullInt32FromInt(channel.ID)
 							playlist.ChannelExternalID = channel.ExternalID
 							playlist.Title = channelPlaylist.Title
-							playlist.MetadataUpdatedAt = ptr.Time(time.Now())
+							playlist.MetadataUpdatedAt = ptr.NullTime(time.Now())
 
 							if err := sorm.SaveRecord(ctx, tx, &playlist); err != nil {
 								return err
@@ -726,10 +726,10 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 
 					playlist.CreatedAt = time.Now()
 					playlist.ExternalID = externalID
-					playlist.ChannelID = channelID
+					playlist.ChannelID = ptr.NullInt32FromIntPtr(channelID)
 					playlist.ChannelExternalID = playlistData.ChannelID
 					playlist.Title = playlistData.Title
-					playlist.MetadataUpdatedAt = ptr.Time(time.Now())
+					playlist.MetadataUpdatedAt = ptr.NullTime(time.Now())
 
 					if err := sorm.CreateRecord(ctx, tx, &playlist); err != nil {
 						return err
@@ -747,7 +747,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 							CreatedAt:          time.Now(),
 							PlaylistID:         playlist.ID,
 							PlaylistExternalID: playlist.ExternalID,
-							VideoID:            nil,
+							VideoID:            sql.NullInt32{Valid: false},
 							VideoExternalID:    videoID,
 							Position:           i,
 						}); err != nil {
@@ -757,7 +757,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 				} else {
 					playlist.ExternalID = externalID
 					if channelID != nil {
-						playlist.ChannelID = channelID
+						playlist.ChannelID = ptr.NullInt32FromIntPtr(channelID)
 					}
 					if playlistData.ChannelID != "" {
 						playlist.ChannelExternalID = playlistData.ChannelID
@@ -765,7 +765,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 					if playlistData.Title != "" {
 						playlist.Title = playlistData.Title
 					}
-					playlist.MetadataUpdatedAt = ptr.Time(time.Now())
+					playlist.MetadataUpdatedAt = ptr.NullTime(time.Now())
 
 					if err := sorm.SaveRecord(ctx, tx, &playlist); err != nil {
 						return err
@@ -794,7 +794,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 							playlistVideo.PlaylistID = playlist.ID
 							playlistVideo.PlaylistExternalID = playlist.ExternalID
 							if video.ID != 0 {
-								playlistVideo.VideoID = &video.ID
+								playlistVideo.VideoID = ptr.NullInt32FromInt(video.ID)
 							}
 							playlistVideo.VideoExternalID = videoID
 							playlistVideo.Position = i
@@ -806,7 +806,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 							playlistVideo.PlaylistID = playlist.ID
 							playlistVideo.PlaylistExternalID = playlist.ExternalID
 							if video.ID != 0 {
-								playlistVideo.VideoID = &video.ID
+								playlistVideo.VideoID = ptr.NullInt32FromInt(video.ID)
 							}
 							playlistVideo.VideoExternalID = videoID
 							playlistVideo.Position = i
@@ -868,13 +868,13 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 
 					video.CreatedAt = time.Now()
 					video.ExternalID = externalID
-					video.ChannelID = channelID
+					video.ChannelID = ptr.NullInt32FromIntPtr(channelID)
 					video.ChannelExternalID = videoData.ChannelID
 					video.Title = videoData.Title
 					video.Description = videoData.Description
-					video.PublishDate = publishDate
-					video.UploadDate = uploadDate
-					video.MetadataUpdatedAt = ptr.Time(time.Now())
+					video.PublishDate = ptr.NullTimeFromPtr(publishDate)
+					video.UploadDate = ptr.NullTimeFromPtr(uploadDate)
+					video.MetadataUpdatedAt = ptr.NullTime(time.Now())
 
 					if err := sorm.CreateRecord(ctx, tx, &video); err != nil {
 						return err
@@ -888,13 +888,13 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 					}
 				} else {
 					video.ExternalID = externalID
-					video.ChannelID = channelID
+					video.ChannelID = ptr.NullInt32FromIntPtr(channelID)
 					video.ChannelExternalID = videoData.ChannelID
 					video.Title = videoData.Title
 					video.Description = videoData.Description
-					video.PublishDate = publishDate
-					video.UploadDate = uploadDate
-					video.MetadataUpdatedAt = ptr.Time(time.Now())
+					video.PublishDate = ptr.NullTimeFromPtr(publishDate)
+					video.UploadDate = ptr.NullTimeFromPtr(uploadDate)
+					video.MetadataUpdatedAt = ptr.NullTime(time.Now())
 
 					if err := sorm.SaveRecord(ctx, tx, &video); err != nil {
 						return err
@@ -919,7 +919,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 				return "", err
 			}
 
-			if video.DownloadedAt != nil {
+			if video.DownloadedAt.Valid {
 				return "", nil
 			}
 
@@ -943,7 +943,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 					return err
 				}
 
-				video.DownloadedAt = ptr.Time(time.Now())
+				video.DownloadedAt = ptr.NullTime(time.Now())
 
 				if err := sorm.SaveRecord(ctx, tx, &video); err != nil {
 					return err
@@ -986,7 +986,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 				return "", err
 			}
 
-			if video.DownloadedAt == nil {
+			if !video.DownloadedAt.Valid {
 				return "", fmt.Errorf("video has not been downloaded")
 			}
 
@@ -1001,7 +1001,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 					return err
 				}
 
-				video.ThumbnailUpdatedAt = ptr.Time(time.Now())
+				video.ThumbnailUpdatedAt = ptr.NullTime(time.Now())
 
 				if err := sorm.SaveRecord(ctx, tx, &video); err != nil {
 					return err
@@ -1028,7 +1028,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 				return "", err
 			}
 
-			if video.DownloadedAt == nil {
+			if !video.DownloadedAt.Valid {
 				return "", fmt.Errorf("video has not been downloaded")
 			}
 
@@ -1059,9 +1059,9 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 
 				switch size {
 				case "360":
-					video.Transcoded360At = ptr.Time(time.Now())
+					video.Transcoded360At = ptr.NullTime(time.Now())
 				case "720":
-					video.Transcoded720At = ptr.Time(time.Now())
+					video.Transcoded720At = ptr.NullTime(time.Now())
 				default:
 					return fmt.Errorf("transcode size should be 360 or 720")
 				}
@@ -1084,7 +1084,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 				return "", err
 			}
 
-			if video.DownloadedAt == nil {
+			if !video.DownloadedAt.Valid {
 				return "", fmt.Errorf("video has not been downloaded")
 			}
 
@@ -1104,7 +1104,7 @@ func registerJobQueueWorkerFunctions(ctx context.Context) error {
 					return err
 				}
 
-				video.AudioExtractedAt = ptr.Time(time.Now())
+				video.AudioExtractedAt = ptr.NullTime(time.Now())
 
 				if err := sorm.SaveRecord(ctx, tx, &video); err != nil {
 					return err
